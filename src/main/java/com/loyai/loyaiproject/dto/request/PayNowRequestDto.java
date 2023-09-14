@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentRequestDto {
+public class PayNowRequestDto {
     @Size(min = 11, max = 11, message = "Must be a 11-digit string")
     @Pattern(regexp = "\\d+", message = "Only digits are allowed")
     private String phoneNumber;

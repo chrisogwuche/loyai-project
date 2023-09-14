@@ -1,6 +1,6 @@
 package com.loyai.loyaiproject.controller;
 
-import com.loyai.loyaiproject.dto.request.PaymentRequestDto;
+import com.loyai.loyaiproject.dto.request.PayNowRequestDto;
 import com.loyai.loyaiproject.dto.response.PayNowResponseDto;
 import com.loyai.loyaiproject.service.InitiatePaymentService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,8 +17,8 @@ public class PayNowController {
     private final InitiatePaymentService initiatePaymentService;
 
     @PostMapping()
-    public ResponseEntity<PayNowResponseDto> initiatePayment(@RequestBody @Valid PaymentRequestDto paymentRequestDto, HttpServletRequest servletRequest){
-        return initiatePaymentService.getToken(paymentRequestDto,servletRequest);
+    public ResponseEntity<PayNowResponseDto> initiatePayment(@RequestBody @Valid PayNowRequestDto payNowRequestDto, HttpServletRequest servletRequest){
+        return initiatePaymentService.getToken(payNowRequestDto,servletRequest);
     }
 
 }

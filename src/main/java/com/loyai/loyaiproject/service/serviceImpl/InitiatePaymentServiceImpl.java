@@ -41,20 +41,20 @@ public class InitiatePaymentServiceImpl implements InitiatePaymentService {
 
 
     @Override
-    public ResponseEntity<PayNowResponseDto> getToken(PaymentRequestDto paymentRequestDto, HttpServletRequest servletRequest) {
+    public ResponseEntity<PayNowResponseDto> getToken(PayNowRequestDto payNowRequestDto, HttpServletRequest servletRequest) {
 
-        return ResponseEntity.ok(tokensFromLoginUser(paymentRequestDto,servletRequest));
+        return ResponseEntity.ok(tokensFromLoginUser(payNowRequestDto,servletRequest));
     }
 
-    private PayNowResponseDto tokensFromLoginUser(PaymentRequestDto paymentRequestDto, HttpServletRequest servletRequest){
+    private PayNowResponseDto tokensFromLoginUser(PayNowRequestDto payNowRequestDto, HttpServletRequest servletRequest){
         HttpHeader httpHeader = new HttpHeader(clientId,clientSecret);
 
-        createUser(paymentRequestDto.getPhoneNumber(),httpHeader);
-        LoginResponseDto loginResponseDto = loginUser(paymentRequestDto.getPhoneNumber(),httpHeader);
+        createUser(payNowRequestDto.getPhoneNumber(),httpHeader);
+        LoginResponseDto loginResponseDto = loginUser(payNowRequestDto.getPhoneNumber(),httpHeader);
 
         String userId = loginResponseDto.getData().getUser().getUserId();
-        String amount = paymentRequestDto.getAmount();
-        String productId = paymentRequestDto.getProductId();
+        String amount = payNowRequestDto.getAmount();
+        String productId = payNowRequestDto.getProductId();
 
         String invoiceId = createInvoice(amount,userId,productId,httpHeader);
 
