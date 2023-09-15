@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 public class PayNowResponseDto {
     private String token;
     private String refreshToken;
-    private String paymentRedirectUrl;
+    private String paymentUrl;
     private String userId;
-    private String verifyPaymentUrl;
 }

@@ -1,7 +1,6 @@
 package com.loyai.loyaiproject.service.serviceImpl;
 
 import com.loyai.loyaiproject.dto.request.*;
-import com.loyai.loyaiproject.dto.response.RedirectUrlsDto;
 import com.loyai.loyaiproject.dto.response.payment.InvoiceIdDto;
 import com.loyai.loyaiproject.dto.response.PayNowResponseDto;
 import com.loyai.loyaiproject.dto.response.payment.InitiatePaymentResponseDto;
@@ -59,12 +58,9 @@ public class PayNowServiceImpl implements PayNowService {
 
         String invoiceId = createInvoice(amount,userId,productId,httpHeader);
 
-        RedirectUrlsDto redirectUrlsDto = initiatePayment(httpHeader,amount,userId,invoiceId,servletRequest);
-        String paymentUrl = redirectUrlsDto.getPaymentUrl();
-        String verifyPaymentUrl = redirectUrlsDto.getVerifyPaymentUrl();
+        String paymentUrl = initiatePayment(httpHeader,amount,userId,invoiceId,servletRequest);
 
         log.info("payment url " +paymentUrl);
-        log.info("verify payment url " +verifyPaymentUrl);
 
         String token = loginResponseDto.getData().getToken();
         String refreshToken = loginResponseDto.getData().getRefresh();
@@ -73,8 +69,7 @@ public class PayNowServiceImpl implements PayNowService {
         PayNowResponseDto payNowResponseDto = new PayNowResponseDto();
         payNowResponseDto.setToken(token);
         payNowResponseDto.setRefreshToken(refreshToken);
-        payNowResponseDto.setPaymentRedirectUrl(paymentUrl);
-        payNowResponseDto.setVerifyPaymentUrl(verifyPaymentUrl);
+        payNowResponseDto.setPaymentUrl(paymentUrl);
         payNowResponseDto.setUserId(userId);
 
         return payNowResponseDto;
@@ -143,7 +138,7 @@ public class PayNowServiceImpl implements PayNowService {
         }
     }
 
-    private RedirectUrlsDto initiatePayment(HttpHeader httpHeader, String amount, String userId, String invoiceId, HttpServletRequest servletRequest){
+    private String initiatePayment(HttpHeader httpHeader, String amount, String userId, String invoiceId, HttpServletRequest servletRequest){
 
         String url = "http://"+servletRequest.getServerName()+":"+servletRequest.getServerPort()+servletRequest.getContextPath();
         String redirectUrl = url+"/api/v1/payment/verify";
@@ -167,11 +162,7 @@ public class PayNowServiceImpl implements PayNowService {
             InitiatePaymentResponseDto initiatePaymentResponseDto = jsonObjectMapper.readValue(initiatePaymentResponse.getBody(),InitiatePaymentResponseDto.class);
             log.info("Initiate payment redirectUrl" +initiatePaymentResponseDto.toString());
 
-            RedirectUrlsDto redirectUrlsDto = new RedirectUrlsDto();
-            redirectUrlsDto.setPaymentUrl(initiatePaymentResponseDto.getData().getUrl());
-            redirectUrlsDto.setVerifyPaymentUrl(redirectUrl);
-
-            return redirectUrlsDto;
+            return initiatePaymentResponseDto.getData().getUrl();
         }
         else {
             throw new NotFoundException("");

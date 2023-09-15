@@ -6,6 +6,8 @@ import com.loyai.loyaiproject.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
 @RequiredArgsConstructor
@@ -14,9 +16,9 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @GetMapping("/verify")
-    public ResponseEntity<PaymentVerifyResponse> verifyPayment(@RequestParam("tx_ref") String transactionRef){
+    public RedirectView verifyPayment(@RequestParam("tx_ref") String transactionRef, RedirectAttributes redirectAttributes){
 
-        return paymentService.verifyPayment(transactionRef);
+        return paymentService.verifyPayment(transactionRef, redirectAttributes);
     }
 
     @GetMapping("/user")

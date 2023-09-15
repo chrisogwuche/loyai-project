@@ -15,7 +15,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.view.RedirectView;
 
 
 @Slf4j
@@ -37,10 +38,24 @@ public class PaymentServiceImpl implements PaymentService {
 
 
     @Override
-    public ResponseEntity<PaymentVerifyResponse> verifyPayment(String transactionId) {
+    public RedirectView verifyPayment(String transactionId, RedirectAttributes redirectAttributes) {
 
         log.info("transac Id:-----" +transactionId);
-        return ResponseEntity.ok(verifyTransactionId(transactionId));
+//        return ResponseEntity.ok(verifyTransactionId(transactionId));
+
+        PaymentVerifyResponse paymentVerifyResponse = verifyTransactionId(transactionId);
+
+        if(paymentVerifyResponse.getStatus().equals("TRUE")){
+
+            redirectAttributes.addAttribute("invoiceId",paymentVerifyResponse.getInvoiceId());
+
+
+            return new RedirectView("https://loyai-work.vercel.app/");
+        }
+        else{
+
+            return new RedirectView("https://google.com");
+        }
     }
 
     @Override
@@ -72,6 +87,7 @@ public class PaymentServiceImpl implements PaymentService {
         HttpEntity<String> verifyRequest = new HttpEntity<>(httpHeader.getHeaders());
 
         ResponseEntity<String> verifyResponse = restTemplate.exchange(verifyUrl,HttpMethod.GET, verifyRequest,String.class,transactionId);
+        PaymentVerifyResponse paymentVerifyResponse = new PaymentVerifyResponse();
 
         if(verifyResponse.getStatusCode().value() == 200){
             VerifyPaymentResponseDto verifyPaymentResponseDto = jsonObjectMapper.readValue(verifyResponse.getBody(), VerifyPaymentResponseDto.class);
@@ -79,27 +95,21 @@ public class PaymentServiceImpl implements PaymentService {
             log.info("transaction Verification: " + verifyPaymentResponseDto.toString());
             String transactionStatus = verifyPaymentResponseDto.getData().getStatus();
 
-            PaymentVerifyResponse paymentVerifyResponse = new PaymentVerifyResponse();
             String invoiceId = verifyPaymentResponseDto.getData().getInvoiceId();
             int realAmountPaid = (verifyPaymentResponseDto.getData().getAmount())/100;
 
             if(verifyAmountPaid(invoiceId, realAmountPaid) == true &&  transactionStatus.equals("SUCCESS")){
-                paymentVerifyResponse.setUserId(verifyPaymentResponseDto.getData().getUserId());
                 paymentVerifyResponse.setStatus("TRUE");
-                paymentVerifyResponse.setAmountPaid(realAmountPaid);
                 paymentVerifyResponse.setInvoiceId(invoiceId);
             }
             else{
-                paymentVerifyResponse.setUserId(verifyPaymentResponseDto.getData().getUserId());
                 paymentVerifyResponse.setStatus("FAILED");
-                paymentVerifyResponse.setAmountPaid(0);
             }
-
-            return paymentVerifyResponse;
         }
-        else{
-            throw new NotFoundException("error accessing data");
+        else {
+            paymentVerifyResponse.setStatus("FAILED");
         }
+        return paymentVerifyResponse;
     }
 
     private boolean verifyAmountPaid(String invoiceId,int amount){
