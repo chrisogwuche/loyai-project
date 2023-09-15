@@ -15,15 +15,9 @@ public class PaymentController {
 
     @GetMapping("/verify")
     public ResponseEntity<PaymentVerifyResponse> verifyPayment(@RequestParam("tx_ref") String transactionRef,
-                                           @RequestParam("user_id") String userId){
+                                                               @RequestParam("user_id") String userId) {
 
         return paymentService.verifyPayment(transactionRef, userId);
     }
 
-//    @GetMapping("/user")
-//    public ResponseEntity<PaidResponseDto> verifyPayment(@RequestParam("invoiceId") String invoiceId
-//            , @RequestParam("userId") String userId){
-//
-//        return paymentService.getPaymentInfo(invoiceId,userId);
-//    }
 }
