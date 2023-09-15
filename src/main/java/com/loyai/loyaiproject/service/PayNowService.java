@@ -7,6 +7,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
-public interface InitiatePaymentService {
+public interface PayNowService {
     ResponseEntity<PayNowResponseDto> getToken(PayNowRequestDto tokenRequestDto, HttpServletRequest servletRequest);
 }

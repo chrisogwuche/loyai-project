@@ -1,6 +1,7 @@
 package com.loyai.loyaiproject.service.serviceImpl;
 
 import com.loyai.loyaiproject.dto.request.*;
+import com.loyai.loyaiproject.dto.response.RedirectUrlsDto;
 import com.loyai.loyaiproject.dto.response.payment.InvoiceIdDto;
 import com.loyai.loyaiproject.dto.response.PayNowResponseDto;
 import com.loyai.loyaiproject.dto.response.payment.InitiatePaymentResponseDto;
@@ -9,7 +10,7 @@ import com.loyai.loyaiproject.exception.NotFoundException;
 import com.loyai.loyaiproject.exception.ServiceUnAvailableException;
 import com.loyai.loyaiproject.kodobe.HttpHeader;
 import com.loyai.loyaiproject.kodobe.KodobeURLs;
-import com.loyai.loyaiproject.service.InitiatePaymentService;
+import com.loyai.loyaiproject.service.PayNowService;
 import jakarta.servlet.http.HttpServletRequest;
 import kong.unirest.JsonObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class InitiatePaymentServiceImpl implements InitiatePaymentService {
+public class PayNowServiceImpl implements PayNowService {
     private final RestTemplate restTemplate;
     private final JsonObjectMapper jsonObjectMapper;
     private final String baseUrl = KodobeURLs.BASE_URL;
@@ -58,9 +59,12 @@ public class InitiatePaymentServiceImpl implements InitiatePaymentService {
 
         String invoiceId = createInvoice(amount,userId,productId,httpHeader);
 
-        String url = initiatePayment(httpHeader,amount,userId,invoiceId,servletRequest);
+        RedirectUrlsDto redirectUrlsDto = initiatePayment(httpHeader,amount,userId,invoiceId,servletRequest);
+        String paymentUrl = redirectUrlsDto.getPaymentUrl();
+        String verifyPaymentUrl = redirectUrlsDto.getVerifyPaymentUrl();
 
-        log.info("sevelet request " +url);
+        log.info("payment url " +paymentUrl);
+        log.info("verify payment url " +verifyPaymentUrl);
 
         String token = loginResponseDto.getData().getToken();
         String refreshToken = loginResponseDto.getData().getRefresh();
@@ -69,7 +73,9 @@ public class InitiatePaymentServiceImpl implements InitiatePaymentService {
         PayNowResponseDto payNowResponseDto = new PayNowResponseDto();
         payNowResponseDto.setToken(token);
         payNowResponseDto.setRefreshToken(refreshToken);
-        payNowResponseDto.setRedirectUrl(url);
+        payNowResponseDto.setPaymentRedirectUrl(paymentUrl);
+        payNowResponseDto.setVerifyPaymentUrl(verifyPaymentUrl);
+        payNowResponseDto.setUserId(userId);
 
         return payNowResponseDto;
     }
@@ -137,7 +143,7 @@ public class InitiatePaymentServiceImpl implements InitiatePaymentService {
         }
     }
 
-    private String initiatePayment(HttpHeader httpHeader,String amount,String userId,String invoiceId,HttpServletRequest servletRequest){
+    private RedirectUrlsDto initiatePayment(HttpHeader httpHeader, String amount, String userId, String invoiceId, HttpServletRequest servletRequest){
 
         String url = "http://"+servletRequest.getServerName()+":"+servletRequest.getServerPort()+servletRequest.getContextPath();
         String redirectUrl = url+"/api/v1/payment/verify";
@@ -161,7 +167,11 @@ public class InitiatePaymentServiceImpl implements InitiatePaymentService {
             InitiatePaymentResponseDto initiatePaymentResponseDto = jsonObjectMapper.readValue(initiatePaymentResponse.getBody(),InitiatePaymentResponseDto.class);
             log.info("Initiate payment redirectUrl" +initiatePaymentResponseDto.toString());
 
-            return initiatePaymentResponseDto.getData().getUrl();
+            RedirectUrlsDto redirectUrlsDto = new RedirectUrlsDto();
+            redirectUrlsDto.setPaymentUrl(initiatePaymentResponseDto.getData().getUrl());
+            redirectUrlsDto.setVerifyPaymentUrl(redirectUrl);
+
+            return redirectUrlsDto;
         }
         else {
             throw new NotFoundException("");

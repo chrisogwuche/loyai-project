@@ -14,9 +14,4 @@ public class User {
         private String email;
         private String phoneNumber;
         private Meta meta;
-        private String createdAt;
-        private String updatedAt;
-        private String authId;
-        private UserProfile profile;
-        private String roleName;
 }

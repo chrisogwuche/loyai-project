@@ -1,6 +1,6 @@
 package com.loyai.loyaiproject.dto.response.payment;
 
-import com.loyai.loyaiproject.dto.response.payment.InvoiceDataDto;
+import com.loyai.loyaiproject.dto.response.invoice.InvoiceDataDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

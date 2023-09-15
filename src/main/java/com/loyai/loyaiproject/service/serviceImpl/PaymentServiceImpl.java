@@ -1,7 +1,8 @@
 package com.loyai.loyaiproject.service.serviceImpl;
 
+import com.loyai.loyaiproject.dto.response.PaidResponseDto;
 import com.loyai.loyaiproject.dto.response.payment.PaymentVerifyResponse;
-import com.loyai.loyaiproject.dto.response.payment.CheckInvoiceResponseDto;
+import com.loyai.loyaiproject.dto.response.invoice.CheckInvoiceResponseDto;
 import com.loyai.loyaiproject.dto.response.payment.VerifyPaymentResponseDto;
 import com.loyai.loyaiproject.exception.NotFoundException;
 import com.loyai.loyaiproject.kodobe.HttpHeader;
@@ -42,6 +43,27 @@ public class PaymentServiceImpl implements PaymentService {
         return ResponseEntity.ok(verifyTransactionId(transactionId));
     }
 
+    @Override
+    public ResponseEntity<PaidResponseDto> getPaymentInfo(String invoiceId, String userId) {
+
+        CheckInvoiceResponseDto invoiceResponseDto = getInvoice(invoiceId);
+
+        boolean paidStatus = invoiceResponseDto.getData().getStatus().equals("PAID");
+        boolean userIdVerifyStatus = invoiceResponseDto.getData().getUserId().equals(userId);
+
+        if(paidStatus && userIdVerifyStatus){
+            PaidResponseDto paidResponseDto = new PaidResponseDto();
+            paidResponseDto.setAmountPaid(invoiceResponseDto.getData().getAmount());
+            paidResponseDto.setUserId(invoiceResponseDto.getData().getUserId());
+
+            return ResponseEntity.ok(paidResponseDto);
+        }
+        else{
+            throw new NotFoundException("userId do no match with the invoice userId");
+        }
+
+    }
+
     private PaymentVerifyResponse verifyTransactionId(String transactionId){
         HttpHeader httpHeader = new HttpHeader(clientId,clientSecret);
 
@@ -61,10 +83,11 @@ public class PaymentServiceImpl implements PaymentService {
             String invoiceId = verifyPaymentResponseDto.getData().getInvoiceId();
             int realAmountPaid = (verifyPaymentResponseDto.getData().getAmount())/100;
 
-            if(getInvoice(invoiceId, realAmountPaid) == true &&  transactionStatus.equals("SUCCESS")){
+            if(verifyAmountPaid(invoiceId, realAmountPaid) == true &&  transactionStatus.equals("SUCCESS")){
                 paymentVerifyResponse.setUserId(verifyPaymentResponseDto.getData().getUserId());
                 paymentVerifyResponse.setStatus("TRUE");
                 paymentVerifyResponse.setAmountPaid(realAmountPaid);
+                paymentVerifyResponse.setInvoiceId(invoiceId);
             }
             else{
                 paymentVerifyResponse.setUserId(verifyPaymentResponseDto.getData().getUserId());
@@ -79,11 +102,26 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
-    private boolean getInvoice(String invoiceId,int amount){
+    private boolean verifyAmountPaid(String invoiceId,int amount){
+
+        CheckInvoiceResponseDto invoiceResponseDto = getInvoice(invoiceId);
+
+        log.info("invoiceValue: " +invoiceResponseDto.toString());
+
+        if(invoiceResponseDto.getData().getAmount() == amount && invoiceResponseDto.getData().getStatus().equals("PAID")){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    private CheckInvoiceResponseDto getInvoice(String invoiceId){
         HttpHeader httpHeader = new HttpHeader(clientId,clientSecret);
 
         HttpEntity<String> updateInvoiceRequest = new HttpEntity<>(httpHeader.getHeaders());
         String updateUrl = baseUrl+updateInvoiceUrl+"{involceId}";
+
         ResponseEntity<String> invoiceResponse = restTemplate
                 .exchange(updateUrl,HttpMethod.GET,updateInvoiceRequest,String.class,invoiceId);
 
@@ -94,14 +132,7 @@ public class PaymentServiceImpl implements PaymentService {
         CheckInvoiceResponseDto invoiceResponseDto =
                 jsonObjectMapper.readValue(invoiceResponse.getBody(), CheckInvoiceResponseDto.class);
 
-        log.info("invoiceValue: " +invoiceResponseDto.toString());
-
-        if(invoiceResponseDto.getData().getAmount() == amount && invoiceResponseDto.getData().getStatus().equals("PAID")){
-            return true;
-        }
-        else{
-            return false;
-        }
+        return invoiceResponseDto;
     }
 
 }
