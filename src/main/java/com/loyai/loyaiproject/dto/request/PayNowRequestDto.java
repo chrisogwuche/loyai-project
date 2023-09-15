@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import org.hibernate.validator.constraints.URL;
 
 
 @Data
@@ -23,5 +23,8 @@ public class PayNowRequestDto {
     @NotNull(message = "amount should not be null")
     @Pattern(regexp = "\\d+", message = "Only digits are allowed")
     private String Amount;
+//    @NotNull(message = "callback required")
+    @URL(message = "url should start with http:// or https://")
+    private String callbackUrl;
 
 }

@@ -1,6 +1,5 @@
 package com.loyai.loyaiproject.service.serviceImpl;
 
-import com.loyai.loyaiproject.dto.response.PaidResponseDto;
 import com.loyai.loyaiproject.dto.response.payment.PaymentVerifyResponse;
 import com.loyai.loyaiproject.dto.response.invoice.CheckInvoiceResponseDto;
 import com.loyai.loyaiproject.dto.response.payment.VerifyPaymentResponseDto;
@@ -15,8 +14,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.servlet.view.RedirectView;
 
 
 @Slf4j
@@ -38,104 +35,86 @@ public class PaymentServiceImpl implements PaymentService {
 
 
     @Override
-    public RedirectView verifyPayment(String transactionId, RedirectAttributes redirectAttributes) {
+    public ResponseEntity<PaymentVerifyResponse> verifyPayment(String transactionId, String userId) {
 
-        log.info("transac Id:-----" +transactionId);
-//        return ResponseEntity.ok(verifyTransactionId(transactionId));
+        log.info("transac Id:-----" + transactionId);
 
-        PaymentVerifyResponse paymentVerifyResponse = verifyTransactionId(transactionId);
-
-        if(paymentVerifyResponse.getStatus().equals("TRUE")){
-
-            redirectAttributes.addAttribute("invoiceId",paymentVerifyResponse.getInvoiceId());
-
-
-            return new RedirectView("https://loyai-work.vercel.app/");
-        }
-        else{
-
-            return new RedirectView("https://google.com");
-        }
+        return paymentVerification(transactionId,userId);
     }
 
-    @Override
-    public ResponseEntity<PaidResponseDto> getPaymentInfo(String invoiceId, String userId) {
+    private ResponseEntity<PaymentVerifyResponse> paymentVerification(String transactionId, String userId) {
+        HttpHeader httpHeader = new HttpHeader(clientId, clientSecret);
 
-        CheckInvoiceResponseDto invoiceResponseDto = getInvoice(invoiceId);
+        VerifyPaymentResponseDto verifyPaymentResponseDto = verifyTransactionId(transactionId, httpHeader);
 
-        boolean paidStatus = invoiceResponseDto.getData().getStatus().equals("PAID");
-        boolean userIdVerifyStatus = invoiceResponseDto.getData().getUserId().equals(userId);
+        String invoiceId = verifyPaymentResponseDto.getData().getInvoiceId();
+        int realAmountPaid = (verifyPaymentResponseDto.getData().getAmount()) / 100;
 
-        if(paidStatus && userIdVerifyStatus){
-            PaidResponseDto paidResponseDto = new PaidResponseDto();
-            paidResponseDto.setAmountPaid(invoiceResponseDto.getData().getAmount());
-            paidResponseDto.setUserId(invoiceResponseDto.getData().getUserId());
+        CheckInvoiceResponseDto checkInvoiceResponseDto = getInvoice(invoiceId, httpHeader);
 
-            return ResponseEntity.ok(paidResponseDto);
+        boolean isAmountVerified = verifyAmountPaidAndInvoiceStatus(checkInvoiceResponseDto, realAmountPaid);
+        boolean isIdVerified = checkInvoiceResponseDto.getData().getUserId().equals(userId);
+        String transactionStatus = verifyPaymentResponseDto.getData().getStatus();
+
+        PaymentVerifyResponse paymentVerifyResponse = new PaymentVerifyResponse();
+
+        if (isAmountVerified && transactionStatus.equals("SUCCESS") && isIdVerified) {
+            paymentVerifyResponse.setStatus("SUCCESS");
+            paymentVerifyResponse.setAmountPaid(checkInvoiceResponseDto.getData().getAmount());
+            paymentVerifyResponse.setUserId(checkInvoiceResponseDto.getData().getUserId());
+
+            return new ResponseEntity<>(paymentVerifyResponse,HttpStatus.OK);
         }
-        else{
-            throw new NotFoundException("userId do no match with the invoice userId");
-        }
 
+        paymentVerifyResponse.setStatus("FAILED");   /* this set to FAILED when the if condition above is false */
+        paymentVerifyResponse.setUserId(userId);
+        paymentVerifyResponse.setAmountPaid(0);
+
+        return new ResponseEntity<>(paymentVerifyResponse,HttpStatus.NOT_FOUND);
     }
 
-    private PaymentVerifyResponse verifyTransactionId(String transactionId){
-        HttpHeader httpHeader = new HttpHeader(clientId,clientSecret);
+    private VerifyPaymentResponseDto verifyTransactionId(String transactionId, HttpHeader httpHeader) {
 
-        String verifyUrl = baseUrl+transactionVerifyUrl+"{id}";
+        String verifyUrl = baseUrl + transactionVerifyUrl + "{id}";
 
         HttpEntity<String> verifyRequest = new HttpEntity<>(httpHeader.getHeaders());
 
-        ResponseEntity<String> verifyResponse = restTemplate.exchange(verifyUrl,HttpMethod.GET, verifyRequest,String.class,transactionId);
-        PaymentVerifyResponse paymentVerifyResponse = new PaymentVerifyResponse();
+        ResponseEntity<String> verifyResponse = restTemplate.exchange(verifyUrl, HttpMethod.GET, verifyRequest, String.class, transactionId);
 
-        if(verifyResponse.getStatusCode().value() == 200){
+        if (verifyResponse.getStatusCode().value() == 200) {
             VerifyPaymentResponseDto verifyPaymentResponseDto = jsonObjectMapper.readValue(verifyResponse.getBody(), VerifyPaymentResponseDto.class);
 
             log.info("transaction Verification: " + verifyPaymentResponseDto.toString());
-            String transactionStatus = verifyPaymentResponseDto.getData().getStatus();
 
-            String invoiceId = verifyPaymentResponseDto.getData().getInvoiceId();
-            int realAmountPaid = (verifyPaymentResponseDto.getData().getAmount())/100;
-
-            if(verifyAmountPaid(invoiceId, realAmountPaid) == true &&  transactionStatus.equals("SUCCESS")){
-                paymentVerifyResponse.setStatus("TRUE");
-                paymentVerifyResponse.setInvoiceId(invoiceId);
-            }
-            else{
-                paymentVerifyResponse.setStatus("FAILED");
-            }
+            return verifyPaymentResponseDto;
+        } else {
+            throw new NotFoundException("error verifying payment with transaction id");
         }
-        else {
-            paymentVerifyResponse.setStatus("FAILED");
-        }
-        return paymentVerifyResponse;
     }
 
-    private boolean verifyAmountPaid(String invoiceId,int amount){
+    private boolean verifyAmountPaidAndInvoiceStatus(CheckInvoiceResponseDto invoiceResponseDto, int amount) {
 
-        CheckInvoiceResponseDto invoiceResponseDto = getInvoice(invoiceId);
+        int invoiceAmount = invoiceResponseDto.getData().getAmount();
+        String invoiceStatus = invoiceResponseDto.getData().getStatus();
 
-        log.info("invoiceValue: " +invoiceResponseDto.toString());
+        log.info("invoiceValue: " + invoiceResponseDto.getData());
 
-        if(invoiceResponseDto.getData().getAmount() == amount && invoiceResponseDto.getData().getStatus().equals("PAID")){
+        if (invoiceAmount == amount && invoiceStatus.equals("PAID")) {
             return true;
-        }
-        else{
+        } else {
             return false;
         }
     }
 
-    private CheckInvoiceResponseDto getInvoice(String invoiceId){
-        HttpHeader httpHeader = new HttpHeader(clientId,clientSecret);
+    private CheckInvoiceResponseDto getInvoice(String invoiceId, HttpHeader httpHeader) {
 
         HttpEntity<String> updateInvoiceRequest = new HttpEntity<>(httpHeader.getHeaders());
-        String updateUrl = baseUrl+updateInvoiceUrl+"{involceId}";
+        String updateUrl = baseUrl + updateInvoiceUrl + "{involceId}";
 
         ResponseEntity<String> invoiceResponse = restTemplate
-                .exchange(updateUrl,HttpMethod.GET,updateInvoiceRequest,String.class,invoiceId);
+                .exchange(updateUrl, HttpMethod.GET, updateInvoiceRequest, String.class, invoiceId);
 
-        if(invoiceResponse.getStatusCode().value() != 200){
+        if (invoiceResponse.getStatusCode().value() != 200) {
             throw new NotFoundException("error");
         }
 
@@ -146,3 +125,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
 }
+
+
+
+

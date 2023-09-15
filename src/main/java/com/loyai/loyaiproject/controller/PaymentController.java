@@ -1,13 +1,11 @@
 package com.loyai.loyaiproject.controller;
 
-import com.loyai.loyaiproject.dto.response.PaidResponseDto;
 import com.loyai.loyaiproject.dto.response.payment.PaymentVerifyResponse;
 import com.loyai.loyaiproject.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.servlet.view.RedirectView;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -16,15 +14,16 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @GetMapping("/verify")
-    public RedirectView verifyPayment(@RequestParam("tx_ref") String transactionRef, RedirectAttributes redirectAttributes){
+    public ResponseEntity<PaymentVerifyResponse> verifyPayment(@RequestParam("tx_ref") String transactionRef,
+                                           @RequestParam("user_id") String userId){
 
-        return paymentService.verifyPayment(transactionRef, redirectAttributes);
+        return paymentService.verifyPayment(transactionRef, userId);
     }
 
-    @GetMapping("/user")
-    public ResponseEntity<PaidResponseDto> verifyPayment(@RequestParam("invoiceId") String invoiceId
-            , @RequestParam("userId") String userId){
-
-        return paymentService.getPaymentInfo(invoiceId,userId);
-    }
+//    @GetMapping("/user")
+//    public ResponseEntity<PaidResponseDto> verifyPayment(@RequestParam("invoiceId") String invoiceId
+//            , @RequestParam("userId") String userId){
+//
+//        return paymentService.getPaymentInfo(invoiceId,userId);
+//    }
 }

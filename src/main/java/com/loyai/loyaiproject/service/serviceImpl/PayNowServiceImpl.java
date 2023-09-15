@@ -10,7 +10,6 @@ import com.loyai.loyaiproject.exception.ServiceUnAvailableException;
 import com.loyai.loyaiproject.kodobe.HttpHeader;
 import com.loyai.loyaiproject.kodobe.KodobeURLs;
 import com.loyai.loyaiproject.service.PayNowService;
-import jakarta.servlet.http.HttpServletRequest;
 import kong.unirest.JsonObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,12 +40,12 @@ public class PayNowServiceImpl implements PayNowService {
 
 
     @Override
-    public ResponseEntity<PayNowResponseDto> getToken(PayNowRequestDto payNowRequestDto, HttpServletRequest servletRequest) {
+    public ResponseEntity<PayNowResponseDto> getToken(PayNowRequestDto payNowRequestDto) {
 
-        return ResponseEntity.ok(tokensFromLoginUser(payNowRequestDto,servletRequest));
+        return ResponseEntity.ok(tokensFromLoginUser(payNowRequestDto));
     }
 
-    private PayNowResponseDto tokensFromLoginUser(PayNowRequestDto payNowRequestDto, HttpServletRequest servletRequest){
+    private PayNowResponseDto tokensFromLoginUser(PayNowRequestDto payNowRequestDto){
         HttpHeader httpHeader = new HttpHeader(clientId,clientSecret);
 
         createUser(payNowRequestDto.getPhoneNumber(),httpHeader);
@@ -55,10 +54,11 @@ public class PayNowServiceImpl implements PayNowService {
         String userId = loginResponseDto.getData().getUser().getUserId();
         String amount = payNowRequestDto.getAmount();
         String productId = payNowRequestDto.getProductId();
+        String callbackUrl = payNowRequestDto.getCallbackUrl();
 
         String invoiceId = createInvoice(amount,userId,productId,httpHeader);
 
-        String paymentUrl = initiatePayment(httpHeader,amount,userId,invoiceId,servletRequest);
+        String paymentUrl = initiatePayment(httpHeader,amount,userId,invoiceId,callbackUrl);
 
         log.info("payment url " +paymentUrl);
 
@@ -138,19 +138,16 @@ public class PayNowServiceImpl implements PayNowService {
         }
     }
 
-    private String initiatePayment(HttpHeader httpHeader, String amount, String userId, String invoiceId, HttpServletRequest servletRequest){
+    private String initiatePayment(HttpHeader httpHeader, String amount, String userId, String invoiceId, String callbackUrl){
 
-        String url = "http://"+servletRequest.getServerName()+":"+servletRequest.getServerPort()+servletRequest.getContextPath();
-        String redirectUrl = url+"/api/v1/payment/verify";
-
-        log.info("redirectUrl: "+redirectUrl + "   url: "+url);
+        log.info("callbackUrl: "+callbackUrl);
 
         PaymentInitiateRequestDto paymentInitiateRequestDto = new PaymentInitiateRequestDto();
         paymentInitiateRequestDto.setAmount(Integer.parseInt(amount)*100);
         paymentInitiateRequestDto.setUserId(userId);
         paymentInitiateRequestDto.setInvoiceId(invoiceId);
         paymentInitiateRequestDto.setEmail("email@showafrica.app");
-        paymentInitiateRequestDto.setRedirectUrl(redirectUrl);
+        paymentInitiateRequestDto.setRedirectUrl(callbackUrl);
 
         HttpEntity<PaymentInitiateRequestDto> paymentRequest = new HttpEntity<>(paymentInitiateRequestDto, httpHeader.getHeaders());
         String paymentUrl = baseUrl+initiatePaymentUrl;
