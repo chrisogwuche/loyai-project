@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/ap1/v1/payments/initiate")
+@RequestMapping("/api/v1/payments/initiate")
 public class PayNowController {
     private final PayNowService payNowService;
 

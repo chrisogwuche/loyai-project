@@ -110,7 +110,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .exchange(updateUrl, HttpMethod.GET, updateInvoiceRequest, String.class, invoiceId);
 
         if (invoiceResponse.getStatusCode().value() != 200) {
-            throw new NotFoundException("error");
+            throw new NotFoundException("error verifying invoice");
         }
 
         CheckInvoiceResponseDto invoiceResponseDto =

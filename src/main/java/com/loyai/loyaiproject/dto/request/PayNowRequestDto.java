@@ -13,7 +13,7 @@ import org.hibernate.validator.constraints.URL;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PayNowRequestDto {
-    @Size(min = 11, max = 13, message = "Must be a 11-digit string")
+    @Size(min = 11, max = 13, message = "Must be 11-digits or 13 digits")
     @Pattern(regexp = "\\d+", message = "Only digits are allowed")
     private String phoneNumber;
 
