@@ -26,11 +26,9 @@ import org.springframework.web.client.RestTemplate;
 public class PayNowServiceImpl implements PayNowService {
     private final RestTemplate restTemplate;
     private final JsonObjectMapper jsonObjectMapper;
-    private final String baseUrl = KodobeURLs.BASE_URL;
-    private final String createUserUrl = KodobeURLs.CREATE_USER_URL;
-    private final String loginUrl = KodobeURLs.LOGIN_URL;
-    private final String invoiceCreationUrl = KodobeURLs.INVOICE_CREATION_URL;
-    private final String initiatePaymentUrl = KodobeURLs.INITIATE_PAYMENT_FLUTTER_URL;
+    private final String userServiceUrl = KodobeURLs.USER_SERVICE_URL;
+    private final String invoiceServiceUrl = KodobeURLs.INVOICE_SERVICE_URL;
+    private final String paymentServiceUrl = KodobeURLs.PAYMENT_SERVICE_URL;
     @Value("${client_id}")
     private String clientId;
     @Value("${client_secret}")
@@ -82,7 +80,7 @@ public class PayNowServiceImpl implements PayNowService {
         loginRequestDto.setPassword(password);
 
         HttpEntity<LoginRequestDto> loginRequest = new HttpEntity<>(loginRequestDto, httpHeader.getHeaders());
-        String userLoginUrl = baseUrl+loginUrl;
+        String userLoginUrl = userServiceUrl+"/v1/auths/login";
 
         ResponseEntity<String> loginResponse = restTemplate.exchange(userLoginUrl,HttpMethod.POST,loginRequest,String.class);
 
@@ -102,7 +100,7 @@ public class PayNowServiceImpl implements PayNowService {
                 .build();
 
         HttpEntity<CreateUserRequestDto> createUserRequest = new HttpEntity<>(createUser, httpHeader.getHeaders());
-        String userUrl = baseUrl+createUserUrl;
+        String userUrl = userServiceUrl+"/v1/users";
 
         ResponseEntity<String> createUserResponse = restTemplate.exchange(userUrl, HttpMethod.POST, createUserRequest, String.class);
 
@@ -120,7 +118,7 @@ public class PayNowServiceImpl implements PayNowService {
 
         HttpEntity<InvoiceCreationRequestDto> invoiceCreationRequest = new HttpEntity<>(invoiceCreationRequestDto, httpHeader.getHeaders());
 
-        String invoiceUrl = baseUrl+invoiceCreationUrl;
+        String invoiceUrl = invoiceServiceUrl+"/v1/invoices";
 
         ResponseEntity<String> invoiceCreationResponse = restTemplate.exchange(invoiceUrl, HttpMethod.POST,invoiceCreationRequest,String.class);
 
@@ -150,7 +148,7 @@ public class PayNowServiceImpl implements PayNowService {
         paymentInitiateRequestDto.setRedirectUrl(callbackUrl);
 
         HttpEntity<PaymentInitiateRequestDto> paymentRequest = new HttpEntity<>(paymentInitiateRequestDto, httpHeader.getHeaders());
-        String paymentUrl = baseUrl+initiatePaymentUrl;
+        String paymentUrl = paymentServiceUrl+"/v1/flutterwave/initialize";
 
         ResponseEntity<String> initiatePaymentResponse =
                 restTemplate.exchange(paymentUrl,HttpMethod.POST,paymentRequest,String.class);

@@ -13,7 +13,7 @@ import org.hibernate.validator.constraints.URL;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PayNowRequestDto {
-    @Size(min = 11, max = 11, message = "Must be a 11-digit string")
+    @Size(min = 11, max = 13, message = "Must be a 11-digit string")
     @Pattern(regexp = "\\d+", message = "Only digits are allowed")
     private String phoneNumber;
 
@@ -23,7 +23,7 @@ public class PayNowRequestDto {
     @NotNull(message = "amount should not be null")
     @Pattern(regexp = "\\d+", message = "Only digits are allowed")
     private String Amount;
-//    @NotNull(message = "callback required")
+
     @URL(message = "url should start with http:// or https://")
     private String callbackUrl;
 

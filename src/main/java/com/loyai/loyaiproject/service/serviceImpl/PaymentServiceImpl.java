@@ -23,9 +23,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final RestTemplate restTemplate;
     private final JsonObjectMapper jsonObjectMapper;
-    private final String baseUrl = KodobeURLs.BASE_URL;
-    private final String transactionVerifyUrl = KodobeURLs.TRANSACTION_VERIFICATION_URL;
-    private final String updateInvoiceUrl = KodobeURLs.UPDATE_INVOICE_URL;
+    private final String paymentServiceUrl = KodobeURLs.PAYMENT_SERVICE_URL;
+    private final String invoiceServiceUrl = KodobeURLs.INVOICE_SERVICE_URL;
 
 
     @Value("${client_id}")
@@ -66,16 +65,12 @@ public class PaymentServiceImpl implements PaymentService {
             return new ResponseEntity<>(paymentVerifyResponse,HttpStatus.OK);
         }
 
-        paymentVerifyResponse.setStatus("FAILED");   /* this set to FAILED when the if condition above is false */
-        paymentVerifyResponse.setUserId(userId);
-        paymentVerifyResponse.setAmountPaid(0);
-
-        return new ResponseEntity<>(paymentVerifyResponse,HttpStatus.NOT_FOUND);
+        throw new NotFoundException("No transaction found for this user");
     }
 
     private VerifyPaymentResponseDto verifyTransactionId(String transactionId, HttpHeader httpHeader) {
 
-        String verifyUrl = baseUrl + transactionVerifyUrl + "{id}";
+        String verifyUrl = paymentServiceUrl+"/v1/flutterwave/verify/"+"{id}";
 
         HttpEntity<String> verifyRequest = new HttpEntity<>(httpHeader.getHeaders());
 
@@ -88,7 +83,7 @@ public class PaymentServiceImpl implements PaymentService {
 
             return verifyPaymentResponseDto;
         } else {
-            throw new NotFoundException("error verifying payment with transaction id");
+            throw new NotFoundException("error verifying payment with tx_ref");
         }
     }
 
@@ -109,7 +104,7 @@ public class PaymentServiceImpl implements PaymentService {
     private CheckInvoiceResponseDto getInvoice(String invoiceId, HttpHeader httpHeader) {
 
         HttpEntity<String> updateInvoiceRequest = new HttpEntity<>(httpHeader.getHeaders());
-        String updateUrl = baseUrl + updateInvoiceUrl + "{involceId}";
+        String updateUrl = invoiceServiceUrl+"/v1/invoices/"+"{involceId}";
 
         ResponseEntity<String> invoiceResponse = restTemplate
                 .exchange(updateUrl, HttpMethod.GET, updateInvoiceRequest, String.class, invoiceId);

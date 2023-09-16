@@ -21,8 +21,7 @@ public class ProductServiceImpl implements ProductService {
 
     private final RestTemplate restTemplate;
     private final JsonObjectMapper jsonObjectMapper;
-    private final String baseUrl = KodobeURLs.BASE_URL;
-    private final String productUrl = KodobeURLs.PRODUCT_URL;
+    private final String productServiceUrl = KodobeURLs.PRODUCT_SERVICE_URL;
     @Value("${client_id}")
     private String clientId;
     @Value("${client_secret}")
@@ -34,7 +33,7 @@ public class ProductServiceImpl implements ProductService {
         HttpHeader httpHeader = new HttpHeader(clientId,clientSecret);
 
         HttpEntity<String> request = new HttpEntity<>(httpHeader.getHeaders());
-        String getProductUrl = baseUrl+productUrl;
+        String getProductUrl = productServiceUrl+"/v1/product";
         ResponseEntity<String> response = restTemplate.exchange(getProductUrl, HttpMethod.GET,request,String.class);
 
         log.info("product Response "+response.getBody());
