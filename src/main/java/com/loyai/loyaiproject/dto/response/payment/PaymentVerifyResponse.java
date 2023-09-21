@@ -9,6 +9,4 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PaymentVerifyResponse {
     private String status;
-    private int amountPaid;
-    private String userId;
 }

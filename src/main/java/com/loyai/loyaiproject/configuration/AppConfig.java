@@ -1,6 +1,7 @@
 package com.loyai.loyaiproject.configuration;
 
 import com.loyai.loyaiproject.exception.RestTemplateErrorHandler;
+import jakarta.servlet.http.HttpServletRequest;
 import kong.unirest.JsonObjectMapper;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -22,4 +23,5 @@ public class AppConfig {
     public JsonObjectMapper jsonObjectMapper(){
         return new JsonObjectMapper();
     }
+
 }

@@ -6,6 +6,8 @@ import com.loyai.loyaiproject.dto.response.payment.VerifyPaymentResponseDto;
 import com.loyai.loyaiproject.exception.NotFoundException;
 import com.loyai.loyaiproject.kodobe.HttpHeader;
 import com.loyai.loyaiproject.kodobe.KodobeURLs;
+import com.loyai.loyaiproject.model.Users;
+import com.loyai.loyaiproject.repository.UsersRepository;
 import com.loyai.loyaiproject.service.PaymentService;
 import kong.unirest.JsonObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
 
 
 @Slf4j
@@ -25,6 +29,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final JsonObjectMapper jsonObjectMapper;
     private final String paymentServiceUrl = KodobeURLs.PAYMENT_SERVICE_URL;
     private final String invoiceServiceUrl = KodobeURLs.INVOICE_SERVICE_URL;
+    private final UsersRepository usersRepository;
+
 
 
     @Value("${client_id}")
@@ -34,17 +40,17 @@ public class PaymentServiceImpl implements PaymentService {
 
 
     @Override
-    public ResponseEntity<PaymentVerifyResponse> verifyPayment(String transactionId, String userId) {
+    public ResponseEntity<PaymentVerifyResponse> verifyPayment(String transactionRef, String userId) {
 
-        log.info("transac Id:-----" + transactionId);
+        log.info("transac Id:-----" + transactionRef);
 
-        return paymentVerification(transactionId,userId);
+        return paymentVerification(transactionRef,userId);
     }
 
-    private ResponseEntity<PaymentVerifyResponse> paymentVerification(String transactionId, String userId) {
+    private ResponseEntity<PaymentVerifyResponse> paymentVerification(String transactionRef, String userId) {
         HttpHeader httpHeader = new HttpHeader(clientId, clientSecret);
 
-        VerifyPaymentResponseDto verifyPaymentResponseDto = verifyTransactionId(transactionId, httpHeader);
+        VerifyPaymentResponseDto verifyPaymentResponseDto = verifyTransactionId(transactionRef, httpHeader);
 
         String invoiceId = verifyPaymentResponseDto.getData().getInvoiceId();
         int realAmountPaid = (verifyPaymentResponseDto.getData().getAmount()) / 100;
@@ -54,13 +60,14 @@ public class PaymentServiceImpl implements PaymentService {
         boolean isAmountVerified = verifyAmountPaidAndInvoiceStatus(checkInvoiceResponseDto, realAmountPaid);
         boolean isIdVerified = checkInvoiceResponseDto.getData().getUserId().equals(userId);
         String transactionStatus = verifyPaymentResponseDto.getData().getStatus();
+        int amountPaid = checkInvoiceResponseDto.getData().getAmount();
 
         PaymentVerifyResponse paymentVerifyResponse = new PaymentVerifyResponse();
 
         if (isAmountVerified && transactionStatus.equals("SUCCESS") && isIdVerified) {
             paymentVerifyResponse.setStatus("SUCCESS");
-            paymentVerifyResponse.setAmountPaid(checkInvoiceResponseDto.getData().getAmount());
-            paymentVerifyResponse.setUserId(checkInvoiceResponseDto.getData().getUserId());
+
+            saveUserToDatabase(userId,amountPaid,transactionRef);  /* saves the user and the airtime amount bought in the database*/
 
             return new ResponseEntity<>(paymentVerifyResponse,HttpStatus.OK);
         }
@@ -68,13 +75,13 @@ public class PaymentServiceImpl implements PaymentService {
         throw new NotFoundException("No transaction found for this user");
     }
 
-    private VerifyPaymentResponseDto verifyTransactionId(String transactionId, HttpHeader httpHeader) {
+    private VerifyPaymentResponseDto verifyTransactionId(String transactionRef, HttpHeader httpHeader) {
 
         String verifyUrl = paymentServiceUrl+"/v1/flutterwave/verify/"+"{id}";
 
         HttpEntity<String> verifyRequest = new HttpEntity<>(httpHeader.getHeaders());
 
-        ResponseEntity<String> verifyResponse = restTemplate.exchange(verifyUrl, HttpMethod.GET, verifyRequest, String.class, transactionId);
+        ResponseEntity<String> verifyResponse = restTemplate.exchange(verifyUrl, HttpMethod.GET, verifyRequest, String.class, transactionRef);
 
         if (verifyResponse.getStatusCode().value() == 200) {
             VerifyPaymentResponseDto verifyPaymentResponseDto = jsonObjectMapper.readValue(verifyResponse.getBody(), VerifyPaymentResponseDto.class);
@@ -87,7 +94,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
-    private boolean verifyAmountPaidAndInvoiceStatus(CheckInvoiceResponseDto invoiceResponseDto, int amount) {
+    private boolean verifyAmountPaidAndInvoiceStatus(CheckInvoiceResponseDto invoiceResponseDto,int amount) {
 
         int invoiceAmount = invoiceResponseDto.getData().getAmount();
         String invoiceStatus = invoiceResponseDto.getData().getStatus();
@@ -117,6 +124,19 @@ public class PaymentServiceImpl implements PaymentService {
                 jsonObjectMapper.readValue(invoiceResponse.getBody(), CheckInvoiceResponseDto.class);
 
         return invoiceResponseDto;
+    }
+
+    private void saveUserToDatabase(String userId,int amountPaid,String transactionRef){
+
+        Users user = new Users();
+        user.setUserId(userId);
+        user.setAirtimeBought(amountPaid);
+        user.setTransaction_ref(transactionRef);
+        user.setCreatedAt(LocalDateTime.now());
+
+        log.info(" saving user-----");
+
+        usersRepository.save(user);
     }
 
 }
