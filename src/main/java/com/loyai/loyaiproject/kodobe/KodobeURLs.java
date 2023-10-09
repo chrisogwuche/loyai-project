@@ -6,6 +6,7 @@ public class KodobeURLs {
     public final static String USER_SERVICE_URL = "https://staging-api.kodobe.net/users";
     public final static String INVOICE_SERVICE_URL = "https://staging-api.kodobe.net/invoicing";
     public final static String PAYMENT_SERVICE_URL = "https://staging-api.kodobe.net/payments";
+    public final static String ADD_AMOUNT_TO_WALLET_URL = "/billing/wallet/product";
 
 
 }

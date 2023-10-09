@@ -10,4 +10,5 @@ public interface WinsRepository extends JpaRepository<Wins,Long> {
 
     @Query("SELECT sum(amountWon) from Wins")
     public Long sumAmountWon();
+
 }

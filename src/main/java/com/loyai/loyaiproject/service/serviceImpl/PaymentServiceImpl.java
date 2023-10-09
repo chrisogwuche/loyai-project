@@ -1,5 +1,6 @@
 package com.loyai.loyaiproject.service.serviceImpl;
 
+import com.loyai.loyaiproject.dto.request.AddMoneyToWalletRequest;
 import com.loyai.loyaiproject.dto.response.payment.PaymentVerifyResponse;
 import com.loyai.loyaiproject.dto.response.invoice.CheckInvoiceResponseDto;
 import com.loyai.loyaiproject.dto.response.payment.VerifyPaymentResponseDto;
@@ -30,6 +31,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final String paymentServiceUrl = KodobeURLs.PAYMENT_SERVICE_URL;
     private final String invoiceServiceUrl = KodobeURLs.INVOICE_SERVICE_URL;
     private final UsersRepository usersRepository;
+    private final String addAmountToWalletUrl = KodobeURLs.ADD_AMOUNT_TO_WALLET_URL;
 
 
 
@@ -37,6 +39,12 @@ public class PaymentServiceImpl implements PaymentService {
     private String clientId;
     @Value("${client_secret}")
     private String clientSecret;
+    @Value("${FT_applicationId}")
+    private String FTapplicationId;
+    @Value("${clientLedgerId}")
+    private String clientLedgerId;
+    @Value("${baseUrl}")
+    private String baseUrl;
 
 
     @Override
@@ -68,6 +76,9 @@ public class PaymentServiceImpl implements PaymentService {
             paymentVerifyResponse.setStatus("SUCCESS");
 
             saveUserToDatabase(userId,amountPaid,transactionRef);  /* saves the user and the airtime amount bought in the database*/
+
+            int noOfChances = realAmountPaid/100;
+            addMoneyToWallet(noOfChances,userId,httpHeader);
 
             return new ResponseEntity<>(paymentVerifyResponse,HttpStatus.OK);
         }
@@ -139,8 +150,23 @@ public class PaymentServiceImpl implements PaymentService {
         usersRepository.save(user);
     }
 
+    private void addMoneyToWallet(int amount, String userId, HttpHeader httpHeader){
+
+        AddMoneyToWalletRequest addMoneyToWalletRequest = new AddMoneyToWalletRequest();
+        addMoneyToWalletRequest.setAmount(amount);
+        addMoneyToWalletRequest.setNarration("Funding wallet with " +amount +" Chances");
+        addMoneyToWalletRequest.setApplicationId(FTapplicationId);
+        addMoneyToWalletRequest.setLedgerId(clientLedgerId);
+        addMoneyToWalletRequest.setProductId("ChanceFundTransferProduct");
+        addMoneyToWalletRequest.setBeneficiaryCustomerId(userId);
+
+        HttpEntity<AddMoneyToWalletRequest> addRequest = new HttpEntity<>(addMoneyToWalletRequest, httpHeader.getHeaders());
+
+        String addToWalletUrl = baseUrl+addAmountToWalletUrl+"/transfer";
+
+        ResponseEntity<String> walletResponse = restTemplate.exchange(addToWalletUrl,HttpMethod.POST,addRequest,String.class);
+
+        log.info("wallet response: " +walletResponse.getBody());
+    }
+
 }
-
-
-
-

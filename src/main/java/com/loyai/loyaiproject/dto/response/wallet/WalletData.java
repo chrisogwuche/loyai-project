@@ -1,7 +1,6 @@
 package com.loyai.loyaiproject.dto.response.wallet;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/pregame/dashboard")
+@CrossOrigin("http://localhost:5173/")
 public class DashboardController {
     private final DashboardService dashboardService;
 

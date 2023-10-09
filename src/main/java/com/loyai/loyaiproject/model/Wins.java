@@ -25,6 +25,5 @@ public class Wins {
     private String gameInstanceId;
     private String prizeId;
     private String deliveryId;
-    @ManyToOne
-    private Users user;
+    private String userId;
 }

@@ -1,11 +1,11 @@
 package com.loyai.loyaiproject.service.serviceImpl;
 
 import com.loyai.loyaiproject.dto.request.WebhookRequestDto;
-import com.loyai.loyaiproject.model.Users;
 import com.loyai.loyaiproject.model.Wins;
 import com.loyai.loyaiproject.repository.UsersRepository;
 import com.loyai.loyaiproject.repository.WinsRepository;
 import com.loyai.loyaiproject.service.WebhookService;
+import kong.unirest.JsonObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -13,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -21,26 +20,33 @@ import java.util.Optional;
 public class WebhookServiceImpl implements WebhookService {
     private final WinsRepository winsRepository;
     private final UsersRepository usersRepository;
+    private final JsonObjectMapper jsonObjectMapper;
 
 
     @Override
-    public ResponseEntity<WebhookRequestDto> setWebhookData(WebhookRequestDto webhookRequestDto) {
+    public ResponseEntity<String> setWebhookData(String requestBody) {
+
+        WebhookRequestDto webhookRequestDto = jsonObjectMapper.readValue(requestBody,WebhookRequestDto.class);
+
         String event = webhookRequestDto.getEvent();
         String webhookStatus = webhookRequestDto.getData().getStatus();
 
         if(event.equals("game.updated.won") && webhookStatus.equals("WON")){
             String userId = webhookRequestDto.getData().getUserId();
 
-            Optional<Users> user = usersRepository.findByUserId(userId);
-            log.info("user won detail: "+user.get().toString());
+            boolean isUserPresent = usersRepository.existsByUserId(userId);
 
-            saveWinner(webhookRequestDto,user.get());
+            log.info("user won detail: "+isUserPresent);
+
+            if(isUserPresent){
+                saveWinner(webhookRequestDto, userId);
+            }
         }
 
-        return new ResponseEntity<>(webhookRequestDto, HttpStatus.OK);
+        return new ResponseEntity<>(requestBody, HttpStatus.OK);
     }
 
-    private void saveWinner(WebhookRequestDto webhookRequestDto,Users user){
+    private void saveWinner(WebhookRequestDto webhookRequestDto,String userId){
 
         Integer amountWon = Integer.valueOf(webhookRequestDto.getData().getPrizeAmount());
         String transactionRef = webhookRequestDto.getData().getTransactionRef();
@@ -55,7 +61,7 @@ public class WebhookServiceImpl implements WebhookService {
         winnerInfo.setLocalDateTime(LocalDateTime.now());
         winnerInfo.setPrizeId(prizeId);
         winnerInfo.setGameInstanceId(gameInstanceId);
-        winnerInfo.setUser(user);
+        winnerInfo.setUserId(userId);
 
         log.info("saving winner in database" +winnerInfo.toString());
 

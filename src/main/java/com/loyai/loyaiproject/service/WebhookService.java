@@ -6,6 +6,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface WebhookService {
-    ResponseEntity<WebhookRequestDto> setWebhookData(WebhookRequestDto webhookRequestDto);
+    ResponseEntity<String> setWebhookData(String requestBody);
 
 }

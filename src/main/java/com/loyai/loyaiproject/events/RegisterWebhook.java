@@ -20,8 +20,8 @@ public class RegisterWebhook {
     private String clientId;
     @Value("${client_secret}")
     private String clientSecret;
-    @Value("${app_baseUrl}")
-    private String appBaseUrl;
+    @Value("${loyai_baseUrl}")
+    private String loyaiBaseUrl;
     @Value("${baseUrl}")
     private String baseUrl;
 
@@ -37,7 +37,7 @@ public class RegisterWebhook {
         log.info("Saving webhook------");
 
         HttpHeader httpHeader = new HttpHeader(clientId,clientSecret);
-        String webhookUrl = appBaseUrl+"/api/v1/webhook/game";
+        String webhookUrl = loyaiBaseUrl +"/api/v1/webhook/game";
 
         RegisterWebhookRequestDto registerWebhook = new RegisterWebhookRequestDto();
         registerWebhook.setEvent("game.updated.won");

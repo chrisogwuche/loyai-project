@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface UsersRepository extends JpaRepository<Users,Long> {
-    Optional<Users> findByUserId(String userId);
+    boolean existsByUserId (String userId);
 
     @Query(value = "SELECT sum (airtimeBought) FROM Users ")
     public Long sumAirtimeBought();
