@@ -1,15 +1,12 @@
 package com.loyai.loyaiproject.service.serviceImpl;
 
 import com.loyai.loyaiproject.dto.response.DashboardResponseDto;
-import com.loyai.loyaiproject.dto.response.wallet.WalletData;
 import com.loyai.loyaiproject.dto.response.wallet.WalletResponseDto;
 import com.loyai.loyaiproject.exception.NotFoundException;
 import com.loyai.loyaiproject.kodobe.HttpHeader;
-import com.loyai.loyaiproject.repository.AirtimeRepository;
 import com.loyai.loyaiproject.repository.UsersRepository;
 import com.loyai.loyaiproject.repository.WinsRepository;
 import com.loyai.loyaiproject.service.DashboardService;
-import jakarta.annotation.PostConstruct;
 import kong.unirest.JsonObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
