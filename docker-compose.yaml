@@ -1,0 +1,41 @@
+services:
+
+  db:
+    ports:
+      - 5432:5432
+    container_name:  postgresql_container
+    image: postgres
+    environment:
+      - POSTGRES_DB=loyaiDB
+      - POSTGRES_PASSWORD=987654321
+      - POSTGRES_USER=postgres
+    restart: always
+
+  backend:
+    build: .
+    container_name: loyai_service_container
+    ports:
+      - 8080:8080
+    environment:
+      db_url: jdbc:postgresql://db:5432/loyaiDB
+      db_username: postgres
+      db_password: 987654321
+
+
+      client-id: staging_loyai
+      secret: staging_RnJnrlvbKnFfHrV6o02MLS9IGQwk5r971IpfJ2hzOEaUbHfgtL
+      denomination: lower
+      gameInstanceId: e5aa21b8-99b5-4f2a-a6c0-8f36ac6d26d3
+      baseUrl: https://staging-api.kodobe.net
+      clientBackgroundImage: https://kodobe-file-upload-staging-v2.s3.amazonaws.com/staging_q4ofk2ag3o4llelstygw/Untitleddesign.png
+      gameUrl: https://staging.d11wouza2pz1ks.amplifyapp.com
+      clientLedgerId: clientLedgerId=14b058a3-5141-4666-98ec-821a356a8010
+      loyai_baseUrl: http://localhost:8080
+      FT_applicationId: 5aef35b2-0f0e-47d1-a53f-4b27e7e42a0d
+
+    depends_on:
+      - db
+    restart: always
+
+
+
