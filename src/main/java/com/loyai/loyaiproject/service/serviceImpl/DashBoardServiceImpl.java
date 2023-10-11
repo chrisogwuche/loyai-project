@@ -25,7 +25,6 @@ import org.springframework.web.client.RestTemplate;
 public class DashBoardServiceImpl implements DashboardService {
 
     private final UsersRepository usersRepository;
-    private final AirtimeRepository airtimeRepository;
     private final WinsRepository winsRepository;
     private final RestTemplate restTemplate;
     private final JsonObjectMapper jsonObjectMapper;
