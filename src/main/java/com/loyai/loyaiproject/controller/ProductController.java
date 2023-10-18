@@ -12,7 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
-@CrossOrigin("http://localhost:5173/")
+//@CrossOrigin("http://localhost:5173/")
+@CrossOrigin("*")
 public class ProductController {
 
     private final ProductService productService;

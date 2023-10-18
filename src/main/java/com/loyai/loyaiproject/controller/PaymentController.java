@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/payments")
-@CrossOrigin("http://localhost:5173/")
-
+//@CrossOrigin("http://localhost:5173/")
+@CrossOrigin("*")
 public class PaymentController {
     private final PaymentService paymentService;
 
