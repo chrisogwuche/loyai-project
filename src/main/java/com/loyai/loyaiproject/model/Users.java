@@ -20,7 +20,7 @@ public class  Users {
     private Long id;
     private String userId;
     private int airtimeBought;
-//    @Column(unique = true)
+    @Column(unique = true)
     private String transaction_ref;
     @CreatedDate
     private LocalDateTime createdAt;
