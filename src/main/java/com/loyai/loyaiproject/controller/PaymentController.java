@@ -17,9 +17,9 @@ public class PaymentController {
 
     @GetMapping("/verify")
     public ResponseEntity<PaymentVerifyResponse> verifyPayment(@RequestParam("tx_ref") String transactionRef,
-                                           @RequestParam("user_id") String userId){
+                                           @RequestParam("user_id") String userId, @RequestParam("token") String token){
 
-        return paymentService.verifyPayment(transactionRef, userId);
+        return paymentService.verifyPayment(transactionRef, userId, token);
     }
 
 }

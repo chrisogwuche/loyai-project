@@ -48,17 +48,18 @@ public class PaymentServiceImpl implements PaymentService {
 
 
     @Override
-    public ResponseEntity<PaymentVerifyResponse> verifyPayment(String transactionRef, String userId) {
+    public ResponseEntity<PaymentVerifyResponse> verifyPayment(String transactionRef, String userId, String token) {
 
         log.info("transac Id:-----" + transactionRef);
 
-        return paymentVerification(transactionRef,userId);
+        return paymentVerification(transactionRef,userId, token);
     }
 
-    private ResponseEntity<PaymentVerifyResponse> paymentVerification(String transactionRef, String userId) {
+    private ResponseEntity<PaymentVerifyResponse> paymentVerification(String transactionRef, String userId, String token) {
         HttpHeader httpHeader = new HttpHeader(clientId, clientSecret);
+        HttpHeader httpHeader1 = new HttpHeader(clientId, clientSecret,token);
 
-        VerifyPaymentResponseDto verifyPaymentResponseDto = verifyTransactionId(transactionRef, httpHeader);
+        VerifyPaymentResponseDto verifyPaymentResponseDto = verifyTransactionId(transactionRef, httpHeader1);
 
         String invoiceId = verifyPaymentResponseDto.getData().getInvoiceId();
         int realAmountPaid = (verifyPaymentResponseDto.getData().getAmount()) / 100;
@@ -92,7 +93,11 @@ public class PaymentServiceImpl implements PaymentService {
 
         HttpEntity<String> verifyRequest = new HttpEntity<>(httpHeader.getHeaders());
 
+        log.info("verify payment request----:" +verifyRequest);
+
         ResponseEntity<String> verifyResponse = restTemplate.exchange(verifyUrl, HttpMethod.GET, verifyRequest, String.class, transactionRef);
+
+        log.info("verify payment response-----:" +verifyResponse);
 
         if (verifyResponse.getStatusCode().value() == 200) {
             VerifyPaymentResponseDto verifyPaymentResponseDto = jsonObjectMapper.readValue(verifyResponse.getBody(), VerifyPaymentResponseDto.class);
