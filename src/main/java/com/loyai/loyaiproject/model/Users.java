@@ -21,7 +21,7 @@ public class  Users {
     private String userId;
     private int airtimeBought;
     @Column(unique = true)
-    private String transaction_ref;
+    private String invoiceId;
     @CreatedDate
     private LocalDateTime createdAt;
 

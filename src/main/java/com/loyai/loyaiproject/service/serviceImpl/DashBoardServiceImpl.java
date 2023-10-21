@@ -15,13 +15,11 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@CrossOrigin("http://localhost:5173/")
 public class DashBoardServiceImpl implements DashboardService {
 
     private final UsersRepository usersRepository;
@@ -71,7 +69,7 @@ public class DashBoardServiceImpl implements DashboardService {
         dashboardResponseDto.setUserChances(userChances);
         dashboardResponseDto.setGamePlayUrl(gamePlayUrl);
 
-        log.info("dashboard_response_dto: " + dashboardResponseDto.toString());
+        log.info("dashboard_response_dto: " + dashboardResponseDto);
 
         return ResponseEntity.ok(dashboardResponseDto);
     }

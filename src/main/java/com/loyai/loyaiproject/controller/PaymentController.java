@@ -16,10 +16,10 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @GetMapping("/verify")
-    public ResponseEntity<PaymentVerifyResponse> verifyPayment(@RequestParam("tx_ref") String transactionRef,
-                                           @RequestParam("user_id") String userId, @RequestParam("token") String token){
+    public ResponseEntity<PaymentVerifyResponse> verifyPayment(@RequestParam("invoice_id") String invoiceId,
+                                           @RequestParam("user_id") String userId){
 
-        return paymentService.verifyPayment(transactionRef, userId, token);
+        return paymentService.verifyPayment(userId, invoiceId);
     }
 
 }

@@ -6,6 +6,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface PaymentService {
-    ResponseEntity<PaymentVerifyResponse>  verifyPayment(String transactionRef, String userId, String token);
+    ResponseEntity<PaymentVerifyResponse>  verifyPayment(String userId, String invoiceId);
 
 }

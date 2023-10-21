@@ -14,4 +14,5 @@ public class PayNowResponseDto {
     private String refreshToken;
     private String paymentUrl;
     private String userId;
+    private String invoiceId;
 }

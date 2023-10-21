@@ -3,8 +3,8 @@ package com.loyai.loyaiproject.service.serviceImpl;
 import com.loyai.loyaiproject.dto.request.AddMoneyToWalletRequest;
 import com.loyai.loyaiproject.dto.response.payment.PaymentVerifyResponse;
 import com.loyai.loyaiproject.dto.response.invoice.CheckInvoiceResponseDto;
-import com.loyai.loyaiproject.dto.response.payment.VerifyPaymentResponseDto;
 import com.loyai.loyaiproject.exception.NotFoundException;
+import com.loyai.loyaiproject.exception.ServiceUnAvailableException;
 import com.loyai.loyaiproject.kodobe.HttpHeader;
 import com.loyai.loyaiproject.kodobe.KodobeURLs;
 import com.loyai.loyaiproject.model.Users;
@@ -48,80 +48,53 @@ public class PaymentServiceImpl implements PaymentService {
 
 
     @Override
-    public ResponseEntity<PaymentVerifyResponse> verifyPayment(String transactionRef, String userId, String token) {
+    public ResponseEntity<PaymentVerifyResponse> verifyPayment(String userId, String invoiceId) {
 
-        log.info("transac Id:-----" + transactionRef);
-
-        return paymentVerification(transactionRef,userId, token);
+        return paymentVerification(userId,invoiceId);
     }
 
-    private ResponseEntity<PaymentVerifyResponse> paymentVerification(String transactionRef, String userId, String token) {
+    private ResponseEntity<PaymentVerifyResponse> paymentVerification(String userId, String invoiceId) {
         HttpHeader httpHeader = new HttpHeader(clientId, clientSecret);
-        HttpHeader httpHeader1 = new HttpHeader(clientId, clientSecret,token);
-
-        VerifyPaymentResponseDto verifyPaymentResponseDto = verifyTransactionId(transactionRef, httpHeader1);
-
-        String invoiceId = verifyPaymentResponseDto.getData().getInvoiceId();
-        int realAmountPaid = (verifyPaymentResponseDto.getData().getAmount()) / 100;
 
         CheckInvoiceResponseDto checkInvoiceResponseDto = getInvoice(invoiceId, httpHeader);
 
-        boolean isAmountVerified = verifyAmountPaidAndInvoiceStatus(checkInvoiceResponseDto, realAmountPaid);
-        boolean isIdVerified = checkInvoiceResponseDto.getData().getUserId().equals(userId);
-        String transactionStatus = verifyPaymentResponseDto.getData().getStatus();
+        boolean verifiedPayment = verifyPaymentWithInvoiceAndId(checkInvoiceResponseDto, userId);
+
         int amountPaid = checkInvoiceResponseDto.getData().getAmount();
 
         PaymentVerifyResponse paymentVerifyResponse = new PaymentVerifyResponse();
 
-        if (isAmountVerified && transactionStatus.equals("SUCCESS") && isIdVerified) {
+        if (verifiedPayment) {
             paymentVerifyResponse.setStatus("SUCCESS");
+            paymentVerifyResponse.setAmountPaid(String.valueOf(amountPaid));
 
-            saveUserToDatabase(userId,amountPaid,transactionRef);  /* saves the user and the airtime amount bought in the database*/
+            saveUserToDatabase(userId,amountPaid,invoiceId);  /* saves the user and the airtime amount bought in the database*/
 
-            int noOfChances = realAmountPaid/100;
+            int noOfChances = amountPaid/100;
             addMoneyToWallet(noOfChances,userId,httpHeader);
 
             return new ResponseEntity<>(paymentVerifyResponse,HttpStatus.OK);
         }
 
-        throw new NotFoundException("No transaction found for this user");
+        paymentVerifyResponse.setStatus("FAILED");
+        paymentVerifyResponse.setStatus("0");
+
+        return new ResponseEntity<>(paymentVerifyResponse,HttpStatus.NOT_FOUND);
     }
 
-    private VerifyPaymentResponseDto verifyTransactionId(String transactionRef, HttpHeader httpHeader) {
+    private boolean verifyPaymentWithInvoiceAndId(CheckInvoiceResponseDto invoiceResponseDto, String userId) {
 
-        String verifyUrl = paymentServiceUrl+"/v1/flutterwave/verify/"+"{id}";
+        boolean isIdVerified = invoiceResponseDto.getData().getUserId().equals(userId);
 
-        HttpEntity<String> verifyRequest = new HttpEntity<>(httpHeader.getHeaders());
-
-        log.info("verify payment request----:" +verifyRequest);
-
-        ResponseEntity<String> verifyResponse = restTemplate.exchange(verifyUrl, HttpMethod.GET, verifyRequest, String.class, transactionRef);
-
-        log.info("verify payment response-----:" +verifyResponse);
-
-        if (verifyResponse.getStatusCode().value() == 200) {
-            VerifyPaymentResponseDto verifyPaymentResponseDto = jsonObjectMapper.readValue(verifyResponse.getBody(), VerifyPaymentResponseDto.class);
-
-            log.info("transaction Verification: " + verifyPaymentResponseDto.toString());
-
-            return verifyPaymentResponseDto;
-        } else {
-            throw new NotFoundException("error verifying payment with tx_ref");
+        if(!isIdVerified){
+            throw new NotFoundException("error verifying payment with userId");
         }
-    }
 
-    private boolean verifyAmountPaidAndInvoiceStatus(CheckInvoiceResponseDto invoiceResponseDto,int amount) {
-
-        int invoiceAmount = invoiceResponseDto.getData().getAmount();
         String invoiceStatus = invoiceResponseDto.getData().getStatus();
 
         log.info("invoiceValue: " + invoiceResponseDto.getData());
 
-        if (invoiceAmount == amount && invoiceStatus.equals("PAID")) {
-            return true;
-        } else {
-            return false;
-        }
+        return invoiceStatus.equals("PAID");
     }
 
     private CheckInvoiceResponseDto getInvoice(String invoiceId, HttpHeader httpHeader) {
@@ -129,11 +102,15 @@ public class PaymentServiceImpl implements PaymentService {
         HttpEntity<String> updateInvoiceRequest = new HttpEntity<>(httpHeader.getHeaders());
         String updateUrl = invoiceServiceUrl+"/v1/invoices/"+"{involceId}";
 
+        log.info("invoice request------>" +updateInvoiceRequest);
+
         ResponseEntity<String> invoiceResponse = restTemplate
                 .exchange(updateUrl, HttpMethod.GET, updateInvoiceRequest, String.class, invoiceId);
 
+        log.info("GET invoice http response----->" +invoiceResponse);
+
         if (invoiceResponse.getStatusCode().value() != 200) {
-            throw new NotFoundException("error verifying invoice");
+            throw new NotFoundException("error verifying invoice with invoiceId");
         }
 
         CheckInvoiceResponseDto invoiceResponseDto =
@@ -142,12 +119,12 @@ public class PaymentServiceImpl implements PaymentService {
         return invoiceResponseDto;
     }
 
-    private void saveUserToDatabase(String userId,int amountPaid,String transactionRef){
+    private void saveUserToDatabase(String userId,int amountPaid,String invoiceId){
 
         Users user = new Users();
         user.setUserId(userId);
         user.setAirtimeBought(amountPaid);
-        user.setTransaction_ref(transactionRef);
+        user.setInvoiceId(invoiceId);
         user.setCreatedAt(LocalDateTime.now());
 
         log.info(" saving user-----");
@@ -165,11 +142,17 @@ public class PaymentServiceImpl implements PaymentService {
         addMoneyToWalletRequest.setProductId("ChanceFundTransferProduct");
         addMoneyToWalletRequest.setBeneficiaryCustomerId(userId);
 
+        log.info("wallet request----->" +addMoneyToWalletRequest);
+
         HttpEntity<AddMoneyToWalletRequest> addRequest = new HttpEntity<>(addMoneyToWalletRequest, httpHeader.getHeaders());
 
         String addToWalletUrl = baseUrl+addAmountToWalletUrl+"/transfer";
 
         ResponseEntity<String> walletResponse = restTemplate.exchange(addToWalletUrl,HttpMethod.POST,addRequest,String.class);
+
+        if(walletResponse.getStatusCode().value() !=200){
+            throw new ServiceUnAvailableException(new RuntimeException().getMessage());
+        }
 
         log.info("wallet response: " +walletResponse.getBody());
     }

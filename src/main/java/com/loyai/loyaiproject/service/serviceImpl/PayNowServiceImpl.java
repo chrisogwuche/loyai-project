@@ -69,6 +69,7 @@ public class PayNowServiceImpl implements PayNowService {
         payNowResponseDto.setRefreshToken(refreshToken);
         payNowResponseDto.setPaymentUrl(paymentUrl);
         payNowResponseDto.setUserId(userId);
+        payNowResponseDto.setInvoiceId(invoiceId);
 
         return payNowResponseDto;
     }
