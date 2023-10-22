@@ -28,7 +28,6 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final RestTemplate restTemplate;
     private final JsonObjectMapper jsonObjectMapper;
-    private final String paymentServiceUrl = KodobeURLs.PAYMENT_SERVICE_URL;
     private final String invoiceServiceUrl = KodobeURLs.INVOICE_SERVICE_URL;
     private final UsersRepository usersRepository;
     private final String addAmountToWalletUrl = KodobeURLs.ADD_AMOUNT_TO_WALLET_URL;
