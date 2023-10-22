@@ -77,7 +77,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         paymentVerifyResponse.setStatus("FAILED");
-        paymentVerifyResponse.setStatus("0");
+        paymentVerifyResponse.setAmountPaid("0");
 
         return new ResponseEntity<>(paymentVerifyResponse,HttpStatus.NOT_FOUND);
     }
