@@ -88,7 +88,8 @@ public class DashBoardServiceImpl implements DashboardService {
             sumAirtimeBought = 0L;
         }
 
-        int amountToBeWon = (int) (sumAirtimeBought - sumAmountWon);
+        int amount = (int) (sumAirtimeBought - sumAmountWon);
+        int amountToBeWon = (int) Math.abs(amount * (0.05));
 
         log.info("amount to be won: " + amountToBeWon);
 
@@ -115,7 +116,6 @@ public class DashBoardServiceImpl implements DashboardService {
             return walletResponseDto;
         }
         throw new NotFoundException(walletResponse.getBody());
-
     }
 
 }
