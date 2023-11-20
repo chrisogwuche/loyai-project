@@ -8,7 +8,6 @@ import com.loyai.loyaiproject.dto.response.user.LoginResponseDto;
 import com.loyai.loyaiproject.exception.NotFoundException;
 import com.loyai.loyaiproject.exception.ServiceUnAvailableException;
 import com.loyai.loyaiproject.kodobe.HttpHeader;
-import com.loyai.loyaiproject.kodobe.KodobeURLs;
 import com.loyai.loyaiproject.service.PayNowService;
 import kong.unirest.JsonObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -26,20 +25,28 @@ import org.springframework.web.client.RestTemplate;
 public class PayNowServiceImpl implements PayNowService {
     private final RestTemplate restTemplate;
     private final JsonObjectMapper jsonObjectMapper;
-    private final String userServiceUrl = KodobeURLs.USER_SERVICE_URL;
-    private final String invoiceServiceUrl = KodobeURLs.INVOICE_SERVICE_URL;
-    private final String paymentServiceUrl = KodobeURLs.PAYMENT_SERVICE_URL;
+
     @Value("${client_id}")
     private String clientId;
     @Value("${client_secret}")
     private String clientSecret;
-    private final String password = "654321";
+    @Value("${userUrl}")
+    private String userUrl;
+    @Value("${invoiceUrl}")
+    private String invoiceUrl;
+    @Value("${paymentUrl}")
+    private String paymentUrl;
+    @Value("${initiatePaymentEmail}")
+    private String initiatePaymentEmail;
+    @Value("${invoiceValidity}")
+    private String invoiceValidity;
+    @Value("${invoiceType}")
+    private String invoiceType;
 
 
 
     @Override
     public ResponseEntity<PayNowResponseDto> getToken(PayNowRequestDto payNowRequestDto) {
-
         return ResponseEntity.ok(tokensFromLoginUser(payNowRequestDto));
     }
 
@@ -55,7 +62,6 @@ public class PayNowServiceImpl implements PayNowService {
         String callbackUrl = payNowRequestDto.getCallbackUrl();
 
         String invoiceId = createInvoice(amount,userId,productId,httpHeader);
-
         String paymentUrl = initiatePayment(httpHeader,amount,userId,invoiceId,callbackUrl);
 
         log.info("payment url " +paymentUrl);
@@ -63,70 +69,63 @@ public class PayNowServiceImpl implements PayNowService {
         String token = loginResponseDto.getData().getToken();
         String refreshToken = loginResponseDto.getData().getRefresh();
 
-
         PayNowResponseDto payNowResponseDto = new PayNowResponseDto();
         payNowResponseDto.setToken(token);
         payNowResponseDto.setRefreshToken(refreshToken);
         payNowResponseDto.setPaymentUrl(paymentUrl);
         payNowResponseDto.setUserId(userId);
         payNowResponseDto.setInvoiceId(invoiceId);
-
         return payNowResponseDto;
     }
 
     private LoginResponseDto loginUser(String phoneNumber, HttpHeader httpHeader){
-
         LoginRequestDto loginRequestDto = new LoginRequestDto();
         loginRequestDto.setPhoneNumber(phoneNumber);
-        loginRequestDto.setPassword(password);
+        loginRequestDto.setPassword(phoneNumber);
 
         HttpEntity<LoginRequestDto> loginRequest = new HttpEntity<>(loginRequestDto, httpHeader.getHeaders());
-        String userLoginUrl = userServiceUrl+"/v1/auths/login";
+        String url = userUrl+"/v1/auths/login";
+        log.info("login request...: "+loginRequest);
+        ResponseEntity<String> loginResponse = restTemplate.exchange(url,HttpMethod.POST,loginRequest,String.class);
+        log.info("login response..: "+loginResponse);
 
-        ResponseEntity<String> loginResponse = restTemplate.exchange(userLoginUrl,HttpMethod.POST,loginRequest,String.class);
-
-        LoginResponseDto loginResponseDto = jsonObjectMapper.readValue(loginResponse.getBody(),LoginResponseDto.class);
-
-        log.info("LoginResponseDto mapping: " +loginResponseDto.toString());
-
-        return loginResponseDto;
+        if(loginResponse.getStatusCode().value() == 200){
+            return jsonObjectMapper.readValue(loginResponse.getBody(),LoginResponseDto.class);
+        }
+        throw new NotFoundException(loginResponse.getBody());
     }
 
     private void createUser(String phoneNumber,HttpHeader httpHeader){
-
         var createUser = CreateUserRequestDto.builder()
                 .name("Loyai User")
-                .password(password)
+                .password(phoneNumber)
                 .phoneNumber(phoneNumber)
                 .build();
 
         HttpEntity<CreateUserRequestDto> createUserRequest = new HttpEntity<>(createUser, httpHeader.getHeaders());
-        String userUrl = userServiceUrl+"/v1/users";
-
-        ResponseEntity<String> createUserResponse = restTemplate.exchange(userUrl, HttpMethod.POST, createUserRequest, String.class);
-
-        log.info("create user response: "+createUserResponse.getBody());
+        String url = userUrl +"/v1/users";
+        log.info("create user request...: "+createUserRequest);
+        ResponseEntity<String> createUserResponse = restTemplate.exchange(url, HttpMethod.POST, createUserRequest, String.class);
+        log.info("create user response...: "+createUserResponse);
     }
 
     private String createInvoice(String amount,String userId,String productId,HttpHeader httpHeader){
-
         InvoiceCreationRequestDto invoiceCreationRequestDto = new InvoiceCreationRequestDto();
         invoiceCreationRequestDto.setProductId(productId);
         invoiceCreationRequestDto.setUserId(userId);
         invoiceCreationRequestDto.setAmount(Integer.parseInt(amount));
-        invoiceCreationRequestDto.setValidity(3);
-        invoiceCreationRequestDto.setType("one-off");
+        invoiceCreationRequestDto.setValidity(Integer.parseInt(invoiceValidity));
+        invoiceCreationRequestDto.setType(invoiceType);
 
         HttpEntity<InvoiceCreationRequestDto> invoiceCreationRequest = new HttpEntity<>(invoiceCreationRequestDto, httpHeader.getHeaders());
 
-        String invoiceUrl = invoiceServiceUrl+"/v1/invoices";
-
+        log.info("invoice creation request...: "+invoiceCreationRequest);
         ResponseEntity<String> invoiceCreationResponse = restTemplate.exchange(invoiceUrl, HttpMethod.POST,invoiceCreationRequest,String.class);
+        log.info("invoice creation response...: "+invoiceCreationResponse);
 
         if(invoiceCreationResponse.getStatusCode().value() == 201) {
             InvoiceIdDto invoiceIdDto = jsonObjectMapper.readValue(invoiceCreationResponse.getBody(),InvoiceIdDto.class);
             log.info("invoiceID: "+invoiceIdDto.getData().getId());
-
             return invoiceIdDto.getData().getId();
 
         }else if(invoiceCreationResponse.getStatusCode().is4xxClientError()){
@@ -145,23 +144,24 @@ public class PayNowServiceImpl implements PayNowService {
         paymentInitiateRequestDto.setAmount(Integer.parseInt(amount)*100);
         paymentInitiateRequestDto.setUserId(userId);
         paymentInitiateRequestDto.setInvoiceId(invoiceId);
-        paymentInitiateRequestDto.setEmail("email@showafrica.app");
+        paymentInitiateRequestDto.setEmail(initiatePaymentEmail);
         paymentInitiateRequestDto.setRedirectUrl(callbackUrl);
 
-        HttpEntity<PaymentInitiateRequestDto> paymentRequest = new HttpEntity<>(paymentInitiateRequestDto, httpHeader.getHeaders());
-        String paymentUrl = paymentServiceUrl+"/v1/flutterwave/initialize";
+        HttpEntity<PaymentInitiateRequestDto> paymentRequest =
+                new HttpEntity<>(paymentInitiateRequestDto, httpHeader.getHeaders());
+        String url = paymentUrl +"/v1/flutterwave/initialize";
 
+        log.info("payment request..: "+paymentRequest);
         ResponseEntity<String> initiatePaymentResponse =
-                restTemplate.exchange(paymentUrl,HttpMethod.POST,paymentRequest,String.class);
+                restTemplate.exchange(url,HttpMethod.POST,paymentRequest,String.class);
+        log.info("payment response..: "+initiatePaymentResponse);
 
         if(initiatePaymentResponse.getStatusCode().value() == 200){
             InitiatePaymentResponseDto initiatePaymentResponseDto = jsonObjectMapper.readValue(initiatePaymentResponse.getBody(),InitiatePaymentResponseDto.class);
-            log.info("Initiate payment redirectUrl" +initiatePaymentResponseDto.toString());
-
             return initiatePaymentResponseDto.getData().getUrl();
         }
         else {
-            throw new NotFoundException("");
+            throw new NotFoundException(initiatePaymentResponse.getBody());
         }
     }
 

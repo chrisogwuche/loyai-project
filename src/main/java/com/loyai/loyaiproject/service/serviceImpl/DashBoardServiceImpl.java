@@ -43,12 +43,12 @@ public class DashBoardServiceImpl implements DashboardService {
     private String gameUrl;
     @Value("${clientLedgerId}")
     private String clientLedgerId;
+    @Value("${billingUrl}")
+    private String billingUrl;
 
     @Override
     public ResponseEntity<DashboardResponseDto> getDashboardData(String bearerToken) {
-
         WalletResponseDto walletResponseDto = getUserWallet(bearerToken);
-
         int noOfWallet = walletResponseDto.get_embedded().getWallets().size();
 
         if(noOfWallet==0){
@@ -62,9 +62,7 @@ public class DashBoardServiceImpl implements DashboardService {
                 + "&denomination=" + denomination + "&clientId=" + clientId;
 
         int amountToBeWon = amountToBeWon();
-
         DashboardResponseDto dashboardResponseDto = new DashboardResponseDto();
-
         dashboardResponseDto.setRewardPool(amountToBeWon);
         dashboardResponseDto.setUserChances(userChances);
         dashboardResponseDto.setGamePlayUrl(gamePlayUrl);
@@ -77,7 +75,6 @@ public class DashBoardServiceImpl implements DashboardService {
     private int amountToBeWon() {
         Long sumAmountWon = winsRepository.sumAmountWon();
         Long sumAirtimeBought = usersRepository.sumAirtimeBought();
-
         log.info("sum of amount won: " + sumAmountWon);
         log.info("sum of airtime bought: " + sumAirtimeBought);
 
@@ -87,35 +84,26 @@ public class DashBoardServiceImpl implements DashboardService {
         if (sumAirtimeBought == null) {
             sumAirtimeBought = 0L;
         }
-
         int amount = (int) (sumAirtimeBought - sumAmountWon);
         int amountToBeWon = (int) Math.abs(amount * (0.05));
 
         log.info("amount to be won: " + amountToBeWon);
-
         return amountToBeWon;
     }
 
     private WalletResponseDto getUserWallet(String token) {
 
         HttpHeader header = new HttpHeader(clientId, clientSecret, token);
-        String url = baseUrl + "/billing/wallets?clientLedgerId=" + clientLedgerId;
-
+        String url = billingUrl +"/wallets?clientLedgerId="+clientLedgerId;
         HttpEntity<String> walletRequest = new HttpEntity<>(header.getHeaders());
 
+        log.info("wallet request..: " +walletRequest);
         ResponseEntity<String> walletResponse = restTemplate.exchange(url, HttpMethod.GET, walletRequest, String.class);
-
         log.info("wallet response: " + walletResponse.getBody());
 
         if (walletResponse.getStatusCode().value() == 200) {
-
-            WalletResponseDto walletResponseDto = jsonObjectMapper.readValue(walletResponse.getBody(),
-                    WalletResponseDto.class);
-
-            log.info("walletResponseDto: " + walletResponseDto.toString());
-            return walletResponseDto;
+            return jsonObjectMapper.readValue(walletResponse.getBody(), WalletResponseDto.class);
         }
         throw new NotFoundException(walletResponse.getBody());
     }
-
 }

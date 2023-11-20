@@ -25,29 +25,23 @@ public class WebhookServiceImpl implements WebhookService {
 
     @Override
     public ResponseEntity<String> setWebhookData(String requestBody) {
-
         WebhookRequestDto webhookRequestDto = jsonObjectMapper.readValue(requestBody,WebhookRequestDto.class);
-
         String event = webhookRequestDto.getEvent();
         String webhookStatus = webhookRequestDto.getData().getStatus();
 
         if(event.equals("game.updated.won") && webhookStatus.equals("WON")){
             String userId = webhookRequestDto.getData().getUserId();
-
             boolean isUserPresent = usersRepository.existsByUserId(userId);
-
             log.info("user won detail: "+isUserPresent);
 
             if(isUserPresent){
                 saveWinner(webhookRequestDto, userId);
             }
         }
-
         return new ResponseEntity<>(requestBody, HttpStatus.OK);
     }
 
     private void saveWinner(WebhookRequestDto webhookRequestDto,String userId){
-
         Integer amountWon = Integer.valueOf(webhookRequestDto.getData().getPrizeAmount());
         String transactionRef = webhookRequestDto.getData().getTransactionRef();
         String gameInstanceId = webhookRequestDto.getData().getGameInstanceId();
@@ -63,8 +57,7 @@ public class WebhookServiceImpl implements WebhookService {
         winnerInfo.setGameInstanceId(gameInstanceId);
         winnerInfo.setUserId(userId);
 
-        log.info("saving winner in database" +winnerInfo.toString());
-
+        log.info("saving winner in database" +winnerInfo);
         winsRepository.save(winnerInfo);
     }
 }

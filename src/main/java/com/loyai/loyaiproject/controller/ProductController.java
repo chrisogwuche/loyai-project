@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
-//@CrossOrigin("http://localhost:5173/")
 @CrossOrigin("*")
 public class ProductController {
 
@@ -20,7 +19,6 @@ public class ProductController {
 
     @GetMapping("/all")
     public ResponseEntity<ProductResponseDto> getAllProduct(){
-
         return productService.getAllProducts();
     }
 }
