@@ -118,9 +118,9 @@ public class PayNowServiceImpl implements PayNowService {
         invoiceCreationRequestDto.setType(invoiceType);
 
         HttpEntity<InvoiceCreationRequestDto> invoiceCreationRequest = new HttpEntity<>(invoiceCreationRequestDto, httpHeader.getHeaders());
-
+        String url =invoiceUrl+"/v1/invoices";
         log.info("invoice creation request...: "+invoiceCreationRequest);
-        ResponseEntity<String> invoiceCreationResponse = restTemplate.exchange(invoiceUrl, HttpMethod.POST,invoiceCreationRequest,String.class);
+        ResponseEntity<String> invoiceCreationResponse = restTemplate.exchange(url, HttpMethod.POST,invoiceCreationRequest,String.class);
         log.info("invoice creation response...: "+invoiceCreationResponse);
 
         if(invoiceCreationResponse.getStatusCode().value() == 201) {
