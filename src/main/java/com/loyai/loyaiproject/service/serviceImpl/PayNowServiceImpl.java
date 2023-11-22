@@ -36,8 +36,6 @@ public class PayNowServiceImpl implements PayNowService {
     private String invoiceUrl;
     @Value("${paymentUrl}")
     private String paymentUrl;
-    @Value("${initiatePaymentEmail}")
-    private String initiatePaymentEmail;
     @Value("${invoiceValidity}")
     private String invoiceValidity;
     @Value("${invoiceType}")
@@ -62,7 +60,7 @@ public class PayNowServiceImpl implements PayNowService {
         String callbackUrl = payNowRequestDto.getCallbackUrl();
 
         String invoiceId = createInvoice(amount,userId,productId,httpHeader);
-        String paymentUrl = initiatePayment(httpHeader,amount,userId,invoiceId,callbackUrl);
+        String paymentUrl = initiatePayment(httpHeader,amount,userId,invoiceId,callbackUrl,payNowRequestDto.getPhoneNumber());
 
         log.info("payment url " +paymentUrl);
 
@@ -129,14 +127,15 @@ public class PayNowServiceImpl implements PayNowService {
             return invoiceIdDto.getData().getId();
 
         }else if(invoiceCreationResponse.getStatusCode().is4xxClientError()){
-            throw new NotFoundException("Can not create invoice. Product not found");
+            throw new NotFoundException(invoiceCreationResponse.getBody());
         }
         else{
             throw new ServiceUnAvailableException("service unavailable");
         }
     }
 
-    private String initiatePayment(HttpHeader httpHeader, String amount, String userId, String invoiceId, String callbackUrl){
+    private String initiatePayment(HttpHeader httpHeader, String amount, String userId,
+                                   String invoiceId, String callbackUrl, String phoneNumber){
 
         log.info("callbackUrl: "+callbackUrl);
 
@@ -144,7 +143,7 @@ public class PayNowServiceImpl implements PayNowService {
         paymentInitiateRequestDto.setAmount(Integer.parseInt(amount)*100);
         paymentInitiateRequestDto.setUserId(userId);
         paymentInitiateRequestDto.setInvoiceId(invoiceId);
-        paymentInitiateRequestDto.setEmail(initiatePaymentEmail);
+        paymentInitiateRequestDto.setEmail(phoneNumber+"@gmail.com");
         paymentInitiateRequestDto.setRedirectUrl(callbackUrl);
 
         HttpEntity<PaymentInitiateRequestDto> paymentRequest =
