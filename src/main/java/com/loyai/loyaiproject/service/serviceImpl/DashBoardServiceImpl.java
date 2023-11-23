@@ -46,6 +46,9 @@ public class DashBoardServiceImpl implements DashboardService {
     @Value("${billingUrl}")
     private String billingUrl;
 
+    @Value("${amountTobeWonPercentage}")
+    private String percentage;
+
     @Override
     public ResponseEntity<DashboardResponseDto> getDashboardData(String bearerToken) {
         WalletResponseDto walletResponseDto = getUserWallet(bearerToken);
@@ -85,8 +88,8 @@ public class DashBoardServiceImpl implements DashboardService {
             sumAirtimeBought = 0L;
         }
         int amount = (int) (sumAirtimeBought - sumAmountWon);
-        int amountToBeWon = (int) Math.abs(amount * (0.05));
-
+        double percent = Double.parseDouble(percentage)/100;
+        int amountToBeWon = (int) Math.abs(amount * (percent));
         log.info("amount to be won: " + amountToBeWon);
         return amountToBeWon;
     }

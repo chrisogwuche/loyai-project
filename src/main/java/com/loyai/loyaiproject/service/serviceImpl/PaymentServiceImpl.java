@@ -56,7 +56,7 @@ public class PaymentServiceImpl implements PaymentService {
         HttpHeader httpHeader = new HttpHeader(clientId, clientSecret);
         CheckInvoiceResponseDto checkInvoiceResponseDto = getInvoice(invoiceId, httpHeader);
         boolean verifiedPayment = verifyPaymentWithInvoiceAndId(checkInvoiceResponseDto, userId);
-        int amountPaid = checkInvoiceResponseDto.getData().getAmount();
+        int amountPaid = checkInvoiceResponseDto.getData().getAmount()/100;
         PaymentVerifyResponse paymentVerifyResponse = new PaymentVerifyResponse();
 
         if (verifiedPayment) {

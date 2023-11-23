@@ -111,7 +111,7 @@ public class PayNowServiceImpl implements PayNowService {
         InvoiceCreationRequestDto invoiceCreationRequestDto = new InvoiceCreationRequestDto();
         invoiceCreationRequestDto.setProductId(productId);
         invoiceCreationRequestDto.setUserId(userId);
-        invoiceCreationRequestDto.setAmount(Integer.parseInt(amount));
+        invoiceCreationRequestDto.setAmount(Integer.parseInt(amount)*100);
         invoiceCreationRequestDto.setValidity(Integer.parseInt(invoiceValidity));
         invoiceCreationRequestDto.setType(invoiceType);
 
@@ -130,7 +130,7 @@ public class PayNowServiceImpl implements PayNowService {
             throw new NotFoundException(invoiceCreationResponse.getBody());
         }
         else{
-            throw new ServiceUnAvailableException("service unavailable");
+            throw new ServiceUnAvailableException(invoiceCreationResponse.getBody());
         }
     }
 
