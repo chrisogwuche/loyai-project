@@ -143,7 +143,7 @@ public class PayNowServiceImpl implements PayNowService {
         paymentInitiateRequestDto.setAmount(Integer.parseInt(amount)*100);
         paymentInitiateRequestDto.setUserId(userId);
         paymentInitiateRequestDto.setInvoiceId(invoiceId);
-        paymentInitiateRequestDto.setEmail(phoneNumber+"@gmail.com");
+        paymentInitiateRequestDto.setEmail(phoneNumber+"@loyai.app");
         paymentInitiateRequestDto.setRedirectUrl(callbackUrl);
 
         HttpEntity<PaymentInitiateRequestDto> paymentRequest =
