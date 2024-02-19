@@ -11,14 +11,12 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/payments/initiate")
-//@CrossOrigin("http://localhost:5173/")
 @CrossOrigin("*")
 public class PayNowController {
     private final PayNowService payNowService;
 
     @PostMapping()
     public ResponseEntity<PayNowResponseDto> initiatePayment(@RequestBody @Valid PayNowRequestDto payNowRequestDto) {
-
         return payNowService.getToken(payNowRequestDto);
     }
 

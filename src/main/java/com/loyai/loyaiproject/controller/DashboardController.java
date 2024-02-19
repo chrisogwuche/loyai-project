@@ -11,14 +11,12 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/pregame/dashboard")
-//@CrossOrigin("http://localhost:5173/")
 @CrossOrigin("*")
 public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping
     public ResponseEntity<DashboardResponseDto> getDashboardData(@RequestParam("bearer-token") String bearerToken){
-
         return dashboardService.getDashboardData(bearerToken);
     }
 }

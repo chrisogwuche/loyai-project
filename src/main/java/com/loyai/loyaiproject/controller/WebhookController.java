@@ -16,8 +16,6 @@ public class WebhookController {
 
     @PostMapping
     public ResponseEntity<String> gameUpdate(@RequestBody String requestBody) {
-
-
         return webhookService.setWebhookData(requestBody);
     }
 

@@ -22,8 +22,8 @@ public class RegisterWebhook {
     private String clientSecret;
     @Value("${loyai_baseUrl}")
     private String loyaiBaseUrl;
-    @Value("${baseUrl}")
-    private String baseUrl;
+    @Value("${eventUrl}")
+    private String eventUrl;
 
 
 
@@ -37,19 +37,20 @@ public class RegisterWebhook {
         log.info("Saving webhook------");
 
         HttpHeader httpHeader = new HttpHeader(clientId,clientSecret);
-        String webhookUrl = loyaiBaseUrl +"/api/v1/webhook/game";
+        String loyaiWebhookUrl = loyaiBaseUrl +"/api/v1/webhook/game";
 
         RegisterWebhookRequestDto registerWebhook = new RegisterWebhookRequestDto();
         registerWebhook.setEvent("game.updated.won");
-        registerWebhook.setWebhook(webhookUrl);
+        registerWebhook.setWebhook(loyaiWebhookUrl);
 
         HttpEntity<RegisterWebhookRequestDto> registerWebhookRequest = new HttpEntity<>(registerWebhook, httpHeader.getHeaders());
-        String saveWebhookUrl = baseUrl+"/events/v1/http";
+        String url =eventUrl+"/v1/http";
 
-        ResponseEntity<String> response = restTemplate.exchange(saveWebhookUrl, HttpMethod.POST,registerWebhookRequest,String.class);
+        log.info(" register webhook request..: "+registerWebhookRequest);
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,registerWebhookRequest,String.class);
+        log.info(" register webhook response..: "+response);
 
         if(response.getStatusCode().value()==201){
-
             log.info("Webhook saved");
         }
         else{

@@ -15,13 +15,11 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@CrossOrigin("http://localhost:5173/")
 public class DashBoardServiceImpl implements DashboardService {
 
     private final UsersRepository usersRepository;
@@ -45,12 +43,15 @@ public class DashBoardServiceImpl implements DashboardService {
     private String gameUrl;
     @Value("${clientLedgerId}")
     private String clientLedgerId;
+    @Value("${billingUrl}")
+    private String billingUrl;
+
+    @Value("${amountTobeWonPercentage}")
+    private String percentage;
 
     @Override
     public ResponseEntity<DashboardResponseDto> getDashboardData(String bearerToken) {
-
         WalletResponseDto walletResponseDto = getUserWallet(bearerToken);
-
         int noOfWallet = walletResponseDto.get_embedded().getWallets().size();
 
         if(noOfWallet==0){
@@ -64,14 +65,12 @@ public class DashBoardServiceImpl implements DashboardService {
                 + "&denomination=" + denomination + "&clientId=" + clientId;
 
         int amountToBeWon = amountToBeWon();
-
         DashboardResponseDto dashboardResponseDto = new DashboardResponseDto();
-
         dashboardResponseDto.setRewardPool(amountToBeWon);
         dashboardResponseDto.setUserChances(userChances);
         dashboardResponseDto.setGamePlayUrl(gamePlayUrl);
 
-        log.info("dashboard_response_dto: " + dashboardResponseDto.toString());
+        log.info("dashboard_response_dto: " + dashboardResponseDto);
 
         return ResponseEntity.ok(dashboardResponseDto);
     }
@@ -79,7 +78,6 @@ public class DashBoardServiceImpl implements DashboardService {
     private int amountToBeWon() {
         Long sumAmountWon = winsRepository.sumAmountWon();
         Long sumAirtimeBought = usersRepository.sumAirtimeBought();
-
         log.info("sum of amount won: " + sumAmountWon);
         log.info("sum of airtime bought: " + sumAirtimeBought);
 
@@ -89,35 +87,26 @@ public class DashBoardServiceImpl implements DashboardService {
         if (sumAirtimeBought == null) {
             sumAirtimeBought = 0L;
         }
-
-        int amountToBeWon = (int) (sumAirtimeBought - sumAmountWon);
-
+        int amount = (int) (sumAirtimeBought - sumAmountWon);
+        double percent = Double.parseDouble(percentage)/100;
+        int amountToBeWon = (int) Math.abs(amount * (percent));
         log.info("amount to be won: " + amountToBeWon);
-
         return amountToBeWon;
     }
 
     private WalletResponseDto getUserWallet(String token) {
 
         HttpHeader header = new HttpHeader(clientId, clientSecret, token);
-        String url = baseUrl + "/billing/wallets?clientLedgerId=" + clientLedgerId;
-
+        String url = billingUrl +"/wallets?clientLedgerId="+clientLedgerId;
         HttpEntity<String> walletRequest = new HttpEntity<>(header.getHeaders());
 
+        log.info("wallet request..: " +walletRequest);
         ResponseEntity<String> walletResponse = restTemplate.exchange(url, HttpMethod.GET, walletRequest, String.class);
-
         log.info("wallet response: " + walletResponse.getBody());
 
         if (walletResponse.getStatusCode().value() == 200) {
-
-            WalletResponseDto walletResponseDto = jsonObjectMapper.readValue(walletResponse.getBody(),
-                    WalletResponseDto.class);
-
-            log.info("walletResponseDto: " + walletResponseDto.toString());
-            return walletResponseDto;
+            return jsonObjectMapper.readValue(walletResponse.getBody(), WalletResponseDto.class);
         }
         throw new NotFoundException(walletResponse.getBody());
-
     }
-
 }
